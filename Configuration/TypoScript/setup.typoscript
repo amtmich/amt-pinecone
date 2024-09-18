@@ -1,0 +1,11 @@
+plugin.tx_amtpinecone_amtpinecone {
+    view {
+        templateRootPaths.0 = EXT:amt_pinecone/Resources/Private/Templates/
+        layoutRootPaths.0 = EXT:amt_pinecone/Resources/Private/Layouts/
+        partialRootPaths.0 = EXT:amt_pinecone/Resources/Private/Partials/
+    }
+
+    persistence {
+        storagePid = 1
+    }
+}
