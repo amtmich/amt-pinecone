@@ -1,0 +1,11 @@
+# cat=basic/enable; type=string; label=OpenAI API key
+openAiApiKey =
+
+# cat=basic/enable; type=string; label=OpenAI model for embeddings
+openAiModelForEmbeddings = text-embedding-3-small
+
+# cat=basic/enable; type=string; label= Pinecone API key
+pineconeApiKey =
+
+
+
