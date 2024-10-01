@@ -7,5 +7,8 @@ openAiModelForEmbeddings = text-embedding-3-small
 # cat=basic/enable; type=string; label= Pinecone API key
 pineconeApiKey =
 
+# cat=basic/enable; type=string; label= Pinecone API optional host
+pineconeOptionalHost =
 
-
+# cat=basic/enable; type=string; label= Pinecone API index name
+pineconeIndexName =
