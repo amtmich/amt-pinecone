@@ -1,14 +1,24 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
-<div>
-    <h1>OpenAI API Key: {openAiApiKey}<br>
-        OpenAI Model for Embeddings: {openAiModelForEmbeddings}<br>
-        Pinecone API Key: {pineocneApiKey}<br></h1>
-</div>
-</body>
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
+      data-namespace-typo3-fluid="true">
+<f:layout name="Base"/>
+<f:section name="Content">
+    <div>
+        <f:flashMessages/>
+        <h3>OpenAI API Key: {openAiApiKey}<br>
+            OpenAI Model for Embeddings: {openAiModelForEmbeddings}<br>
+            Pinecone API Key: {pineconeApiKey}<br>
+            Pinecone API optional host: {pineconeOptionalHost}<br>
+            Pinecone API index name: {pineconeIndexName}<br>
+        </h3>
+        <f:if condition="{pineconeAllIndexes}">
+            <h3>List of existing indexes: </h3>
+            <f:for each="{pineconeAllIndexes}" as="index">
+                Index Name: {index.name}
+                <br>
+                Host Name: {index.host}
+                <br>
+            </f:for>
+        </f:if>
+    </div>
+</f:section>
 </html>
