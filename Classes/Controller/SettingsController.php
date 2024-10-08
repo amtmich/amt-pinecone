@@ -15,11 +15,12 @@ class SettingsController extends BaseController
         $configuration = ClientUtility::createExtensionConfigurationObject()->get('amt_pinecone');
         $openAiClient = ClientUtility::createOpenAiClient();
         $pineconeClient = ClientUtility::createPineconeClient();
+        $pineconeValidateIndexName = $pineconeClient->validateIndexProvidedByUser();
+        $pineconeValidateIndexName === true ? $this->addFlashMessage('Index name is valid') : $this->addFlashMessage('Index name is invalid', '', ContextualFeedbackSeverity::ERROR);
 
         try {
             $openAiValidateApiKey = $openAiClient->getTestApiCall();
             $pineconeValidateApiKey = $pineconeClient->getTestApiCall();
-            //$pineconeCreatedIndexName = $pineconeClient->createIndex($pineconeClient->getIndexName());
             $this->addFlashMessage('OpenAI Api Key is valid');
             $this->addFlashMessage('Pinecone Api Key is valid');
 
@@ -35,8 +36,8 @@ class SettingsController extends BaseController
                 'pinecone' => $pineconeValidateApiKey,
                 'pineconeOptionalHost' => $pineconeClient->getOptionalHost(),
                 'pineconeIndexName' => $pineconeClient->getIndexName(),
-                //'pineconeCreatedIndexName' => $pineconeCreatedIndexName,
                 'pineconeAllIndexes' => $pineconeClient->getAllIndexes(),
+                'pineconeValidateIndexName' => $pineconeValidateIndexName
 
             ]);
 

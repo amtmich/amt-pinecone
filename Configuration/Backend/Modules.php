@@ -19,6 +19,9 @@ return [
             Amt\AmtPinecone\Controller\SettingsController::class => [
                 'settings'
             ],
+            Amt\AmtPinecone\Controller\SearchController::class => [
+                'search', 'index'
+            ],
         ],
         'routes' => [
             '_default' => [

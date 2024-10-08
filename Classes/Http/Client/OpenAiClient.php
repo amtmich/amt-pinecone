@@ -42,4 +42,12 @@ class OpenAiClient extends BaseClient
 
         return $response;
     }
+
+    public function getRequestHeader(): array
+    {
+        return [
+            'Content-Type' => 'application/json',
+            'Authorization' => "Bearer {$this->clientApiKeyValue}",
+        ];
+    }
 }

@@ -31,7 +31,7 @@ abstract class BaseClient implements ClientInterface
         return new \stdClass();
     }
 
-    protected function sendRequest(array $header, string $url, string $method, ?string $jsonData = null, ?string $optionalHost = null): string
+    public function sendRequest(array $header, string $url, string $method, ?string $jsonData = null, ?string $optionalHost = null): string
     {
         $host = empty($optionalHost) ? $this->baseUrl : $optionalHost;
         $response = $this->client->request(
@@ -46,7 +46,7 @@ abstract class BaseClient implements ClientInterface
         return $response->getContent(false);
     }
 
-    protected function serializeData(array $data): false|string
+    public function serializeData(array $data): false|string
     {
         return \json_encode($data);
     }
