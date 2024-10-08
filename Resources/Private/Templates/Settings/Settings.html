@@ -9,6 +9,7 @@
             Pinecone API Key: {pineconeApiKey}<br>
             Pinecone API optional host: {pineconeOptionalHost}<br>
             Pinecone API index name: {pineconeIndexName}<br>
+            Pinecone API validation result - index name: {pineconeValidateIndexName}<br>
         </h3>
         <f:if condition="{pineconeAllIndexes}">
             <h3>List of existing indexes: </h3>
@@ -19,6 +20,9 @@
                 <br>
             </f:for>
         </f:if>
+        <f:link.action action="index" controller="Search" class="btn btn-primary">
+            Search with the Pinecone
+        </f:link.action>
     </div>
 </f:section>
 </html>

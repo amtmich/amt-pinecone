@@ -20,8 +20,8 @@ class PineconeClient extends BaseClient
     {
         parent::__construct();
         $this->clientApiKeyValue = $extensionConfiguration->get('amt_pinecone')[self::CLIENT_API_KEY] ?? '';
-        $this->optionalHost = $extensionConfiguration->get('amt_pinecone')[self::OPTIONAL_HOST_KEY] ?? '';
         $this->indexName = $extensionConfiguration->get('amt_pinecone')[self::INDEX_NAME] ?? '';
+        $this->optionalHost = $this->getOptionalHostFromApi();
     }
 
     public function getOptionalHost(): ?string
@@ -57,7 +57,7 @@ class PineconeClient extends BaseClient
         }
 
         if (is_null($response)) {
-            throw new \Exception('Error, please provide a valid Pinecone API key');
+            throw new \Exception('Error, please provide a valid Pinecone API key and index name');
         }
 
         return $response;
@@ -107,19 +107,10 @@ class PineconeClient extends BaseClient
         return $allIndexes;
     }
 
-    private  function getNewIndexNameIfEmpty(string $indexName): string
-    {
-        if (empty($indexName)) {
-            $indexName = 'index' . rand(0, 100);
-            $this->setIndexName($indexName);
-        }
-        return $this->getIndexName();
-    }
-
     /**
      * @return array<string>
      */
-    private function getRequestHeader(): array
+    public function getRequestHeader(): array
     {
         return [
             'Content-Type' => 'application/json',
@@ -127,5 +118,49 @@ class PineconeClient extends BaseClient
             'Api-Key' => $this->clientApiKeyValue,
             'X-Pinecone-API-Version: 2024-07',
         ];
+    }
+
+    public function queryResult(array $embeddings): \stdClass
+    {
+        $data = [
+            'topK' => 10,
+            'includeMetadata' => true,
+            'vector' => $embeddings,
+        ];
+        $response = $this->validateResponse($this->sendRequest($this->getRequestHeader(), '/query', 'POST', $this->serializeData($data), $this->optionalHost));
+
+        return $response;
+    }
+
+
+    public function validateIndexProvidedByUser(): bool
+    {
+        $allIndexes = $this->getAllIndexes();
+        foreach ($allIndexes as $index) {
+            if ($index['name'] === $this->indexName) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public function getOptionalHostFromApi(): string
+    {
+        if ($this->validateIndexProvidedByUser()) {
+            $response = $this->validateResponse($this->sendRequest($this->getRequestHeader(), 'indexes/' . $this->indexName, 'GET'));
+            $this->setOptionalHost("https://".$response->host);
+        }
+
+        return $this->getOptionalHost();
+    }
+
+    private function getNewIndexNameIfEmpty(string $indexName): string
+    {
+        if (empty($indexName)) {
+            $indexName = 'index' . rand(0, 100);
+            $this->setIndexName($indexName);
+        }
+
+        return $this->getIndexName();
     }
 }

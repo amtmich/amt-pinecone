@@ -1,0 +1,29 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
+      xmlns:be="http://typo3.org/ns/TYPO3/CMS/Backend/ViewHelpers"
+      data-namespace-typo3-fluid="true">
+<f:layout name="Base"/>
+<f:section name="Content">
+    <h1>Pinecone Search - results</h1>
+    <f:link.action action="settings" controller="Settings" class="btn btn-primary">
+        Settings AmtPinecone
+    </f:link.action>
+    <f:if condition="{results}">
+        <h2>Results</h2>
+        <ul>
+            <f:for each="{results}" as="result">
+                <li>
+                    <strong>ID of record:</strong> {result.id} <br/>
+                    <strong>UID from table:</strong> {result.metadata.uid} <br/>
+                    <strong>Table:</strong> {result.metadata.tablename} <br/>
+                    <strong>Score:</strong> {result.score} <br/>
+                    <be:link.editRecord table="{result.metadata.tablename}" uid="{result.metadata.uid}">
+                        <button type="button" class="btn btn-primary">
+                            Edit Record
+                        </button>
+                    </be:link.editRecord>
+                </li>
+            </f:for>
+        </ul>
+    </f:if>
+</f:section>
+</html>
