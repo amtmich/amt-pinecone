@@ -150,7 +150,7 @@ class ClientService
 
         foreach ($fields as $field) {
             if (isset($record[$field])) {
-                $concatenatedFields .= ' ' . $record[$field];
+                $concatenatedFields .= ' ' . strip_tags($record[$field]);
             }
         }
 
