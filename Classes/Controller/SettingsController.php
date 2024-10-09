@@ -2,12 +2,22 @@
 
 namespace Amt\AmtPinecone\Controller;
 
+use Amt\AmtPinecone\Service\ClientService;
 use Amt\AmtPinecone\Utility\ClientUtility;
 use Psr\Http\Message\ResponseInterface;
+use TYPO3\CMS\Backend\Template\ModuleTemplateFactory;
 use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
 
 class SettingsController extends BaseController
 {
+    protected ClientService $clientService;
+
+    public function __construct(ModuleTemplateFactory $moduleTemplateFactory, ClientService $clientService)
+    {
+        parent::__construct($moduleTemplateFactory);
+        $this->clientService = $clientService;
+    }
+
     public function settingsAction(): ResponseInterface
     {
         $moduleTemplate = $this->createRequestModuleTemplate();
@@ -37,8 +47,8 @@ class SettingsController extends BaseController
                 'pineconeOptionalHost' => $pineconeClient->getOptionalHost(),
                 'pineconeIndexName' => $pineconeClient->getIndexName(),
                 'pineconeAllIndexes' => $pineconeClient->getAllIndexes(),
-                'pineconeValidateIndexName' => $pineconeValidateIndexName
-
+                'pineconeValidateIndexName' => $pineconeValidateIndexName,
+                'usedOpenAiTokens' => $this->clientService->getTotalTokens()
             ]);
 
         return $moduleTemplate->renderResponse('Settings');

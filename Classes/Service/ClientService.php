@@ -6,6 +6,7 @@ namespace Amt\AmtPinecone\Service;
 
 use \Amt\AmtPinecone\Http\Client\OpenAiClient;
 use \Amt\AmtPinecone\Http\Client\PineconeClient;
+use TYPO3\CMS\Core\Registry;
 use \TYPO3\CMS\Core\Utility\StringUtility;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
@@ -14,11 +15,13 @@ class ClientService
 {
     protected OpenAiClient $openAiClient;
     protected PineconeClient $pineconeClient;
+    protected Registry $registry;
 
-    public function __construct(OpenAiClient $openAiClient, PineconeClient $pineconeClient)
+    public function __construct(OpenAiClient $openAiClient, PineconeClient $pineconeClient, Registry $registry)
     {
         $this->openAiClient = $openAiClient;
         $this->pineconeClient = $pineconeClient;
+        $this->registry = $registry;
     }
 
     public function indexRecordsToPinecone(string $tableName, int $batchSize): void
@@ -80,6 +83,7 @@ class ClientService
         $jsonData = $this->openAiClient->serializeData($data);
         $response = $this->openAiClient->sendRequest($this->openAiClient->getRequestHeader(), 'embeddings', 'POST', $jsonData);
         $responseData = json_decode($response, true);
+        $this->sumUpUsedTokensOpenAi($responseData['usage']['prompt_tokens']);
 
         return $responseData['data'][0]['embedding'];
     }
@@ -151,5 +155,19 @@ class ClientService
         }
 
         return $this->generateEmbedding($concatenatedFields);
+    }
+
+    private function sumUpUsedTokensOpenAi(?int $usedTokens): void
+    {
+        if ($usedTokens) {
+            $currentTotalTokens = $this->getTotalTokens();
+            $updatedTotalTokens = $currentTotalTokens + $usedTokens;
+            $this->registry->set('AmtPinecone', 'embeddings_prompt_tokens', $updatedTotalTokens);
+        }
+    }
+
+    public function getTotalTokens()
+    {
+       return $this->registry->get('AmtPinecone', 'embeddings_prompt_tokens');
     }
 }
