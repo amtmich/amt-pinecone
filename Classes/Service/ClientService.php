@@ -6,6 +6,7 @@ namespace Amt\AmtPinecone\Service;
 
 use \Amt\AmtPinecone\Http\Client\OpenAiClient;
 use \Amt\AmtPinecone\Http\Client\PineconeClient;
+use Amt\AmtPinecone\Utility\ClientUtility;
 use TYPO3\CMS\Core\Registry;
 use \TYPO3\CMS\Core\Utility\StringUtility;
 use TYPO3\CMS\Core\Database\ConnectionPool;
@@ -76,16 +77,17 @@ class ClientService
 
     public function generateEmbedding(string $text): ?array
     {
+        $configuration = ClientUtility::createExtensionConfigurationObject()->get('amt_pinecone');
+
         $data = [
             'input' => $text,
-            'model' => 'text-embedding-3-small'
+            'model' => $configuration['openAiModelForEmbeddings']
         ];
         $jsonData = $this->openAiClient->serializeData($data);
-        $response = $this->openAiClient->sendRequest($this->openAiClient->getRequestHeader(), 'embeddings', 'POST', $jsonData);
-        $responseData = json_decode($response, true);
-        $this->sumUpUsedTokensOpenAi($responseData['usage']['prompt_tokens']);
+        $responseData = $this->openAiClient->validateResponse($this->openAiClient->sendRequest($this->openAiClient->getRequestHeader(), 'embeddings', 'POST', $jsonData));
+        $this->sumUpUsedTokensOpenAi($responseData->usage->prompt_tokens);
 
-        return $responseData['data'][0]['embedding'];
+        return $responseData->data[0]->embedding;
     }
 
     public function getResultQuery(array $embeddings): array

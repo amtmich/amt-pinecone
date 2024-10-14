@@ -3,27 +3,40 @@
       data-namespace-typo3-fluid="true">
 <f:layout name="Base"/>
 <f:section name="Content">
-    <h1>Pinecone Search - results</h1>
-    <f:link.action action="settings" controller="Settings" class="btn btn-primary">
+    <h1>Pinecone Search - Results</h1>
+    <f:link.action action="settings" controller="Settings" class="btn btn-secondary mb-3">
         Settings AmtPinecone
     </f:link.action>
     <f:if condition="{results}">
         <h2>Results</h2>
-        <ul>
+        <table class="table table-striped">
+            <thead>
+            <tr>
+                <th>ID of Record</th>
+                <th>UID from Table</th>
+                <th>Table</th>
+                <th>Score</th>
+                <th>Action</th>
+            </tr>
+            </thead>
+            <tbody>
             <f:for each="{results}" as="result">
-                <li>
-                    <strong>ID of record:</strong> {result.id} <br/>
-                    <strong>UID from table:</strong> {result.metadata.uid} <br/>
-                    <strong>Table:</strong> {result.metadata.tablename} <br/>
-                    <strong>Score:</strong> {result.score} <br/>
-                    <be:link.editRecord table="{result.metadata.tablename}" uid="{result.metadata.uid}">
-                        <button type="button" class="btn btn-primary">
-                            Edit Record
-                        </button>
-                    </be:link.editRecord>
-                </li>
+                <tr>
+                    <td>{result.id}</td>
+                    <td>{result.metadata.uid}</td>
+                    <td>{result.metadata.tablename}</td>
+                    <td>{result.score}</td>
+                    <td>
+                        <be:link.editRecord table="{result.metadata.tablename}" uid="{result.metadata.uid}">
+                            <button type="button" class="btn btn-secondary">
+                                Edit Record
+                            </button>
+                        </be:link.editRecord>
+                    </td>
+                </tr>
             </f:for>
-        </ul>
+            </tbody>
+        </table>
     </f:if>
 </f:section>
 </html>

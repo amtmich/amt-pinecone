@@ -47,8 +47,7 @@ class PineconeClient extends BaseClient
     public function validateResponse($response): \stdClass
     {
         if (!is_string($response)) {
-
-            throw new \Exception('Error, please try again later');
+            throw new \Exception('Error, please try again later.');
         }
         $response = $this->decodeData($response);
 
@@ -57,7 +56,7 @@ class PineconeClient extends BaseClient
         }
 
         if (is_null($response)) {
-            throw new \Exception('Error, please provide a valid Pinecone API key and index name');
+            throw new \Exception('Error, please provide a valid Pinecone API key and index name.');
         }
 
         return $response;
