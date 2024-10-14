@@ -2,28 +2,71 @@
       data-namespace-typo3-fluid="true">
 <f:layout name="Base"/>
 <f:section name="Content">
-    <div>
+    <div class="container mt-5">
         <f:flashMessages/>
-        <h3>OpenAI API Key: {openAiApiKey}<br>
-            OpenAI Model for Embeddings: {openAiModelForEmbeddings}<br>
-            Used OpenAi tokens by AmtPinecone extension: {usedOpenAiTokens}<br>
-            Pinecone API Key: {pineconeApiKey}<br>
-            Pinecone API optional host: {pineconeOptionalHost}<br>
-            Pinecone API index name: {pineconeIndexName}<br>
-            Pinecone API validation result - index name: {pineconeValidateIndexName}<br>
-        </h3>
-        <f:if condition="{pineconeAllIndexes}">
-            <h3>List of existing indexes: </h3>
-            <f:for each="{pineconeAllIndexes}" as="index">
-                Index Name: {index.name}
-                <br>
-                Host Name: {index.host}
-                <br>
-            </f:for>
-        </f:if>
-        <f:link.action action="index" controller="Search" class="btn btn-primary">
-            Search with the Pinecone
-        </f:link.action>
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h3>AmtPinecone Extension Configuration</h3><br>
+            </div>
+            <div class="card-body">
+                <ul class="list-group">
+                    <li class="list-group-item">
+                        <f:render partial="ApiStatus" arguments="{validatedApiResponse: validateOpenAiApiKey}"/>
+                        OpenAI API Key:
+                        <span class="text-muted">{openAiApiKey}</span>
+                    </li>
+                    <li class="list-group-item">
+                        <f:render partial="ApiStatus" arguments="{validatedApiResponse: validatePineconeApiKey}"/>
+                        Pinecone API Key:
+                        <span class="text-muted">{pineconeApiKey}</span>
+                    </li>
+                    <li class="list-group-item">
+                        <f:render partial="ApiStatus" arguments="{validatedApiResponse: validateOpenAiModel}"/>
+                        OpenAI Model for Embeddings:
+                        <span class="text-muted">{openAiModelForEmbeddings}</span>
+                    </li>
+                    <li class="list-group-item">
+                        <f:render partial="ApiStatus" arguments="{validatedApiResponse: validatePineconeIndexName}"/>
+                        Pinecone API index name:
+                        <span class="text-muted">{pineconeIndexName}</span>
+                    </li>
+                </ul>
+                <div class="mt-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h3>Auxiliary values from API's</h3><br>
+                    </div>
+                    <ul class="list-group">
+                        <li class="list-group-item">Pinecone API index name: <span
+                                class="text-muted">{pineconeIndexName}</span></li>
+                        <li class="list-group-item">Pinecone API optional host: <span class="text-muted">{pineconeOptionalHost}</span>
+                        </li>
+                        <li class="list-group-item">Used OpenAI tokens by AmtPinecone extension: <span
+                                class="text-muted">{usedOpenAiTokens}</span>
+                        </li>
+                    </ul>
+                </div>
+                <f:if condition="{pineconeAllIndexes}">
+                    <div class="mt-4">
+                        <div class="card-header bg-secondary text-white">
+                            <h3>List of existing indexes</h3><br>
+                        </div>
+                        <ul class="list-group">
+                            <f:for each="{pineconeAllIndexes}" as="index">
+                                <li class="list-group-item">
+                                    <strong>Index Name:</strong> {index.name} <br>
+                                    <strong>Host Name:</strong> {index.host}
+                                </li>
+                            </f:for>
+                        </ul>
+                    </div>
+                </f:if>
+                <div class="mt-4">
+                    <f:link.action action="index" controller="Search" class="btn btn-secondary">
+                        Search with the Pinecone
+                    </f:link.action>
+                </div>
+            </div>
+        </div>
     </div>
 </f:section>
 </html>

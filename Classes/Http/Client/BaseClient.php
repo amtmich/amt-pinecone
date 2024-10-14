@@ -51,8 +51,18 @@ abstract class BaseClient implements ClientInterface
         return \json_encode($data);
     }
 
-    protected function decodeData(string $jsonData): mixed
+    public function validateApiKey(): bool
     {
-        return json_decode($jsonData);
+        try {
+            $this->getTestApiCall();
+            return true;
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    protected function decodeData(string $jsonData, ?bool $associative = null): mixed
+    {
+        return json_decode($jsonData, $associative);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Amt\AmtPinecone\Controller;
 
+use Amt\AmtPinecone\Http\Client\BaseClient;
 use Amt\AmtPinecone\Service\ClientService;
 use Amt\AmtPinecone\Utility\ClientUtility;
 use Psr\Http\Message\ResponseInterface;
@@ -26,31 +27,44 @@ class SettingsController extends BaseController
         $openAiClient = ClientUtility::createOpenAiClient();
         $pineconeClient = ClientUtility::createPineconeClient();
         $pineconeValidateIndexName = $pineconeClient->validateIndexProvidedByUser();
-        $pineconeValidateIndexName === true ? $this->addFlashMessage('Index name is valid') : $this->addFlashMessage('Index name is invalid', '', ContextualFeedbackSeverity::ERROR);
+        $openAiValidateApiKey = $this->validateApiCall($openAiClient);
+        $pineconeValidateApiKey = $this->validateApiCall($pineconeClient);
+        $openAiValidateModel = $openAiClient->validateEmbeddingModels();
 
-        try {
-            $openAiValidateApiKey = $openAiClient->getTestApiCall();
-            $pineconeValidateApiKey = $pineconeClient->getTestApiCall();
-            $this->addFlashMessage('OpenAI Api Key is valid');
-            $this->addFlashMessage('Pinecone Api Key is valid');
-
-        } catch (\Exception $e) {
-            $this->addFlashMessage($e->getMessage(), '', ContextualFeedbackSeverity::ERROR);
+        if ($pineconeValidateIndexName === false) {
+            $this->addFlashMessage('Index name is invalid.', '', ContextualFeedbackSeverity::ERROR);
         }
+
+        if ($openAiValidateModel === false) {
+            $this->addFlashMessage('Please provide a valid OpenAI model for embeddings.', '', ContextualFeedbackSeverity::ERROR);
+        }
+
         $moduleTemplate->assignMultiple(
             [
                 'openAiApiKey' => $configuration['openAiApiKey'],
                 'pineconeApiKey' => $configuration['pineconeApiKey'],
                 'openAiModelForEmbeddings' => $configuration['openAiModelForEmbeddings'],
-                'openAi' => $openAiValidateApiKey,
-                'pinecone' => $pineconeValidateApiKey,
+                'validateOpenAiApiKey' => $openAiValidateApiKey,
+                'validatePineconeApiKey' => $pineconeValidateApiKey,
                 'pineconeOptionalHost' => $pineconeClient->getOptionalHost(),
                 'pineconeIndexName' => $pineconeClient->getIndexName(),
                 'pineconeAllIndexes' => $pineconeClient->getAllIndexes(),
-                'pineconeValidateIndexName' => $pineconeValidateIndexName,
-                'usedOpenAiTokens' => $this->clientService->getTotalTokens()
+                'validatePineconeIndexName' => $pineconeValidateIndexName,
+                'usedOpenAiTokens' => $this->clientService->getTotalTokens(),
+                'validateOpenAiModel' => $openAiValidateModel
             ]);
 
         return $moduleTemplate->renderResponse('Settings');
+    }
+
+    public function validateApiCall(BaseClient $client): bool
+    {
+        try {
+            $client->getTestApiCall();
+        } catch (\Exception $e) {
+            $this->addFlashMessage($e->getMessage(), '', ContextualFeedbackSeverity::ERROR);
+            return false;
+        }
+        return true;
     }
 }
