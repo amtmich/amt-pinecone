@@ -30,7 +30,12 @@ class SettingsController extends BaseController
         $openAiValidateApiKey = $this->validateApiCall($openAiClient);
         $pineconeValidateApiKey = $this->validateApiCall($pineconeClient);
         $openAiValidateModel = $openAiClient->validateEmbeddingModels();
+        $openAiUsedTokens = $this->clientService->getTotalTokens();
+        $openAiAvailableTokens = $this->clientService->calculateAvailableTokens();
 
+        if (!$this->clientService->hasTokensAvailable()) {
+            $this->addFlashMessage('OpenAI API token limit exceeded.', '', ContextualFeedbackSeverity::ERROR);
+        }
         if ($pineconeValidateIndexName === false) {
             $this->addFlashMessage('Index name is invalid.', '', ContextualFeedbackSeverity::ERROR);
         }
@@ -44,14 +49,16 @@ class SettingsController extends BaseController
                 'openAiApiKey' => $configuration['openAiApiKey'],
                 'pineconeApiKey' => $configuration['pineconeApiKey'],
                 'openAiModelForEmbeddings' => $configuration['openAiModelForEmbeddings'],
-                'validateOpenAiApiKey' => $openAiValidateApiKey,
-                'validatePineconeApiKey' => $pineconeValidateApiKey,
                 'pineconeOptionalHost' => $pineconeClient->getOptionalHost(),
                 'pineconeIndexName' => $pineconeClient->getIndexName(),
                 'pineconeAllIndexes' => $pineconeClient->getAllIndexes(),
+                'openAiUsedTokens' => $openAiUsedTokens,
+                'openAiTokenLimit' => $configuration['openAiTokenLimit'],
+                'openAiAvailableTokens' => $openAiAvailableTokens,
+                'validateOpenAiApiKey' => $openAiValidateApiKey,
+                'validatePineconeApiKey' => $pineconeValidateApiKey,
                 'validatePineconeIndexName' => $pineconeValidateIndexName,
-                'usedOpenAiTokens' => $this->clientService->getTotalTokens(),
-                'validateOpenAiModel' => $openAiValidateModel
+                'validateOpenAiModel' => $openAiValidateModel,
             ]);
 
         return $moduleTemplate->renderResponse('Settings');

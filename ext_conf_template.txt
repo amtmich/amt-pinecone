@@ -12,3 +12,6 @@ pineconeIndexName =
 
 # cat=basic/enable; type=string; label= Batch size for index to the Pinecone command
 pineconeBatchSize = 10
+
+# cat=basic/enable; type=int; label= OpenAI token limit
+openAiTokenLimit = 1000000
