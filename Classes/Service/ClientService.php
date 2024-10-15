@@ -17,12 +17,14 @@ class ClientService
     protected OpenAiClient $openAiClient;
     protected PineconeClient $pineconeClient;
     protected Registry $registry;
+    protected mixed $configuration;
 
     public function __construct(OpenAiClient $openAiClient, PineconeClient $pineconeClient, Registry $registry)
     {
         $this->openAiClient = $openAiClient;
         $this->pineconeClient = $pineconeClient;
         $this->registry = $registry;
+        $this->configuration = ClientUtility::createExtensionConfigurationObject()->get('amt_pinecone');
     }
 
     public function indexRecordsToPinecone(string $tableName, int $batchSize): void
@@ -59,6 +61,46 @@ class ClientService
         } while (count($records) > 0);
     }
 
+    public function getTotalTokens()
+    {
+        return $this->registry->get('AmtPinecone', 'embeddings_prompt_tokens') ?? 0;
+    }
+
+    public function calculateAvailableTokens(): int
+    {
+        return max(0, (int)$this->configuration['openAiTokenLimit'] - $this->getTotalTokens());
+    }
+
+    public function hasTokensAvailable(): bool
+    {
+        return $this->calculateAvailableTokens() > 0;
+    }
+
+    public function generateEmbedding(string $text): ?array
+    {
+        $data = [
+            'input' => $text,
+            'model' => $this->configuration['openAiModelForEmbeddings']
+        ];
+        $jsonData = $this->openAiClient->serializeData($data);
+
+        if (!$this->hasTokensAvailable()) {
+            throw new \Exception('OpenAI API token limit exceeded.', 401);
+        }
+
+        $responseData = $this->openAiClient->validateResponse($this->openAiClient->sendRequest($this->openAiClient->getRequestHeader(), 'embeddings', 'POST', $jsonData));
+        $this->sumUpUsedTokensOpenAi($responseData->usage->prompt_tokens);
+
+        return $responseData->data[0]->embedding;
+    }
+
+    public function getResultQuery(array $embeddings): array
+    {
+        $results = $this->pineconeClient->queryResult($embeddings);
+
+        return $results->matches;
+    }
+
     private function storeIndexedRecord(int $uid, string $tableName): void
     {
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
@@ -73,28 +115,6 @@ class ClientService
                 'indexed_timestamp' => time(),
             ])
             ->executeStatement();
-    }
-
-    public function generateEmbedding(string $text): ?array
-    {
-        $configuration = ClientUtility::createExtensionConfigurationObject()->get('amt_pinecone');
-
-        $data = [
-            'input' => $text,
-            'model' => $configuration['openAiModelForEmbeddings']
-        ];
-        $jsonData = $this->openAiClient->serializeData($data);
-        $responseData = $this->openAiClient->validateResponse($this->openAiClient->sendRequest($this->openAiClient->getRequestHeader(), 'embeddings', 'POST', $jsonData));
-        $this->sumUpUsedTokensOpenAi($responseData->usage->prompt_tokens);
-
-        return $responseData->data[0]->embedding;
-    }
-
-    public function getResultQuery(array $embeddings): array
-    {
-        $results = $this->pineconeClient->queryResult($embeddings);
-
-        return $results->matches;
     }
 
     private function fetchRecords(string $tableName, int $limit, int $offset): array
@@ -166,10 +186,5 @@ class ClientService
             $updatedTotalTokens = $currentTotalTokens + $usedTokens;
             $this->registry->set('AmtPinecone', 'embeddings_prompt_tokens', $updatedTotalTokens);
         }
-    }
-
-    public function getTotalTokens()
-    {
-       return $this->registry->get('AmtPinecone', 'embeddings_prompt_tokens');
     }
 }
