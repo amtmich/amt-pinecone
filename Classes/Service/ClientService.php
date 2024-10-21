@@ -8,9 +8,12 @@ use \Amt\AmtPinecone\Http\Client\OpenAiClient;
 use \Amt\AmtPinecone\Http\Client\PineconeClient;
 use Amt\AmtPinecone\Utility\ClientUtility;
 use TYPO3\CMS\Core\Registry;
+use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
 use \TYPO3\CMS\Core\Utility\StringUtility;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Core\Messaging\FlashMessage;
+use TYPO3\CMS\Core\Messaging\FlashMessageService;
 
 class ClientService
 {
@@ -61,21 +64,6 @@ class ClientService
         } while (count($records) > 0);
     }
 
-    public function getTotalTokens()
-    {
-        return $this->registry->get('AmtPinecone', 'embeddings_prompt_tokens') ?? 0;
-    }
-
-    public function calculateAvailableTokens(): int
-    {
-        return max(0, (int)$this->configuration['openAiTokenLimit'] - $this->getTotalTokens());
-    }
-
-    public function hasTokensAvailable(): bool
-    {
-        return $this->calculateAvailableTokens() > 0;
-    }
-
     public function generateEmbedding(string $text): ?array
     {
         $data = [
@@ -99,6 +87,104 @@ class ClientService
         $results = $this->pineconeClient->queryResult($embeddings);
 
         return $results->matches;
+    }
+
+    public function getTotalTokens()
+    {
+        return $this->registry->get('AmtPinecone', 'embeddings_prompt_tokens') ?? 0;
+    }
+
+    public function fetchTablesToIndex(): array
+    {
+        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
+            ->getQueryBuilderForTable('tx_amt_pinecone_configindex');
+
+        return $queryBuilder->select('*')
+            ->from('tx_amt_pinecone_configindex')
+            ->executeQuery()
+            ->fetchAllAssociative();
+    }
+
+    public function getIndexingProgress(): array
+    {
+        $tablesToIndex = $this->fetchTablesToIndex();
+        $indexingProgress = [];
+
+        foreach ($tablesToIndex as $record) {
+            $tableName = $record['tablename'];
+            if (!$this->doesTableExist($tableName)) {
+                $this->sendFlashMessage('Please check records configuration and correct table name.');
+                continue;
+            }
+            $totalRecords = $this->getTotalRecords($tableName);
+            $indexedRecords = $this->getIndexedRecords($tableName);
+            $progress = ($totalRecords > 0) ? ($indexedRecords / $totalRecords) * 100 : 0;
+
+            $indexingProgress[] = [
+                'tableName' => $tableName,
+                'totalRecords' => $totalRecords,
+                'indexedRecords' => $indexedRecords,
+                'progress' => round($progress),
+            ];
+        }
+
+        return $indexingProgress;
+    }
+
+    public function doesTableExist(string $tableName): bool
+    {
+        $schemaManager = GeneralUtility::makeInstance(ConnectionPool::class)
+            ->getConnectionForTable($tableName)
+            ->createSchemaManager();
+
+        return $schemaManager->tablesExist([$tableName]);
+    }
+
+    public function sendFlashMessage(string $message): void
+    {
+        $message = GeneralUtility::makeInstance(
+            FlashMessage::class,
+            $message,
+            '',
+            ContextualFeedbackSeverity::ERROR,
+            true
+        );
+        $flashMessageService = GeneralUtility::makeInstance(FlashMessageService::class);
+
+        $messageQueue = $flashMessageService->getMessageQueueByIdentifier();
+        $messageQueue->addMessage($message);
+    }
+
+    public function calculateAvailableTokens(): int
+    {
+        return max(0, (int)$this->configuration['openAiTokenLimit'] - $this->getTotalTokens());
+    }
+
+    public function hasTokensAvailable(): bool
+    {
+        return $this->calculateAvailableTokens() > 0;
+    }
+
+    /**
+     * @return array<int,string>
+     */
+    public function getNonExistsTables(): array
+    {
+        $tablesToIndex = $this->fetchTablesToIndex();
+        $nonExistsTables = [];
+        foreach ($tablesToIndex as $record) {
+            $tableName = $record['tablename'];
+            if (!$this->doesTableExist($tableName)) {
+                $this->sendFlashMessage('Please check records configuration and correct table name.');
+                $nonExistsTables[] =
+                    [
+                        'uid' => $record['uid'],
+                        'tablename' => $tableName
+                    ];
+            }
+        }
+
+        return $nonExistsTables;
     }
 
     private function storeIndexedRecord(int $uid, string $tableName): void
@@ -186,5 +272,30 @@ class ClientService
             $updatedTotalTokens = $currentTotalTokens + $usedTokens;
             $this->registry->set('AmtPinecone', 'embeddings_prompt_tokens', $updatedTotalTokens);
         }
+    }
+
+    private function getTotalRecords(string $tableName): int
+    {
+        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
+            ->getQueryBuilderForTable($tableName);
+
+        return (int)$queryBuilder->count('uid')
+            ->from($tableName)
+            ->executeQuery()
+            ->fetchOne();
+    }
+
+    private function getIndexedRecords(string $tableName): int
+    {
+        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
+            ->getQueryBuilderForTable('tx_amt_pinecone_pineconeindex');
+
+        return (int)$queryBuilder->count('uid')
+            ->from('tx_amt_pinecone_pineconeindex')
+            ->where(
+                $queryBuilder->expr()->eq('tablename', $queryBuilder->createNamedParameter($tableName, \PDO::PARAM_STR)),
+            )
+            ->executeQuery()
+            ->fetchOne();
     }
 }

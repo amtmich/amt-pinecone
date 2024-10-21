@@ -30,8 +30,8 @@ class SettingsController extends BaseController
         $openAiValidateApiKey = $this->validateApiCall($openAiClient);
         $pineconeValidateApiKey = $this->validateApiCall($pineconeClient);
         $openAiValidateModel = $openAiClient->validateEmbeddingModels();
-        $openAiUsedTokens = $this->clientService->getTotalTokens();
         $openAiAvailableTokens = $this->clientService->calculateAvailableTokens();
+        $indexingProgress = $this->clientService->getIndexingProgress();
 
         if (!$this->clientService->hasTokensAvailable()) {
             $this->addFlashMessage('OpenAI API token limit exceeded.', '', ContextualFeedbackSeverity::ERROR);
@@ -52,13 +52,15 @@ class SettingsController extends BaseController
                 'pineconeOptionalHost' => $pineconeClient->getOptionalHost(),
                 'pineconeIndexName' => $pineconeClient->getIndexName(),
                 'pineconeAllIndexes' => $pineconeClient->getAllIndexes(),
-                'openAiUsedTokens' => $openAiUsedTokens,
+                'openAiUsedTokens' => $this->clientService->getTotalTokens(),
                 'openAiTokenLimit' => $configuration['openAiTokenLimit'],
                 'openAiAvailableTokens' => $openAiAvailableTokens,
                 'validateOpenAiApiKey' => $openAiValidateApiKey,
                 'validatePineconeApiKey' => $pineconeValidateApiKey,
                 'validatePineconeIndexName' => $pineconeValidateIndexName,
                 'validateOpenAiModel' => $openAiValidateModel,
+                'indexingProgress' => $indexingProgress,
+                'nonExistsTables' => $this->clientService->getNonExistsTables()
             ]);
 
         return $moduleTemplate->renderResponse('Settings');

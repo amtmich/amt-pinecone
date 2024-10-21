@@ -8,3 +8,11 @@ CREATE TABLE tx_amt_pinecone_pineconeindex
     deleted           tinyint(1) DEFAULT 0 NOT NULL,
     PRIMARY KEY (uid)
 );
+
+CREATE TABLE tx_amt_pinecone_configindex
+(
+    uid          int(11)      NOT NULL AUTO_INCREMENT,
+    tablename    varchar(255) NOT NULL,
+    pid          int(11)      NOT NULL DEFAULT 0,
+    PRIMARY KEY (uid)
+);
