@@ -55,12 +55,16 @@ class OpenAiClient extends BaseClient
 
     public function validateEmbeddingModels(): bool
     {
-        $configurationModel = $this->openAiModelValue;
-        $availableModels = $this->getTestApiCall()->data;
-        foreach ($availableModels as $model) {
-            if ($model->id === $configurationModel) {
-                return true;
+        try {
+            $configurationModel = $this->openAiModelValue;
+            $availableModels = $this->getTestApiCall()->data;
+            foreach ($availableModels as $model) {
+                if ($model->id === $configurationModel) {
+                    return true;
+                }
             }
+            return false;
+        } catch (\Exception $e) {
         }
         return false;
     }
