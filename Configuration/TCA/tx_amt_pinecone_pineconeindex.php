@@ -7,6 +7,7 @@ return [
         'crdate' => 'crdate',
         'delete' => 'deleted',
         'searchFields' => 'tablename,record_uid',
+        'iconfile' => 'EXT:amt_pinecone/Resources/Public/Icons/Extension.svg',
     ],
     'columns' => [
         'record_uid' => [

@@ -27,6 +27,11 @@ class SearchController extends BaseController
     public function searchAction(): ResponseInterface
     {
         $moduleTemplate = $this->createRequestModuleTemplate();
+
+        if (!$this->request->hasArgument('query')) {
+            return $this->redirect('settings', 'Settings');
+        }
+
         $query = $this->request->getArgument('query');
         $embeddings = $this->clientService->generateEmbedding($query);
         $results = $this->clientService->getResultQuery($embeddings);

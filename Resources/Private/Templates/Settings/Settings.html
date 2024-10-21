@@ -1,4 +1,5 @@
 <html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
+      xmlns:be="http://typo3.org/ns/TYPO3/CMS/Backend/ViewHelpers"
       data-namespace-typo3-fluid="true">
 <f:layout name="Base"/>
 <f:section name="Content">
@@ -64,6 +65,60 @@
                                 </li>
                             </f:for>
                         </ul>
+                    </div>
+                </f:if>
+                <div class="mt-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h3>Indexed records from tables - progress</h3><br>
+                    </div>
+                    <ul class="list-group">
+                        <li class="list-group-item">
+                            <f:for each="{indexingProgress}" as="progressItem">
+                                <div class="mb-4">
+                                    <strong>{progressItem.tableName}</strong> <span class="text-muted">({progressItem.indexedRecords}/{progressItem.totalRecords} records indexed)</span>
+                                    <div class="progress">
+                                        <div class="progress-bar bg-secondary" role="progressbar"
+                                             style="width: {progressItem.progress}%;"
+                                             aria-valuenow="{progressItem.progress}" aria-valuemin="0"
+                                             aria-valuemax="100">
+                                            {progressItem.progress}%
+                                        </div>
+                                    </div>
+                                </div>
+                            </f:for>
+                        </li>
+                    </ul>
+                </div>
+                <f:if condition="{nonExistsTables}">
+                    <div class="mt-4">
+                        <div class="card-header bg-secondary text-white">
+                            <h3>Invalid tables names configuration</h3><br>
+                        </div>
+                        <table class="table table-striped text">
+                            <thead>
+                            <tr>
+                                <th style="text-align: center">UID from table</th>
+                                <th style="text-align: center">Table</th>
+                                <th style="text-align: center">Action</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <f:for each="{nonExistsTables}" as="nonExistsTable">
+                                <tr>
+                                    <td style="text-align: center">{nonExistsTable.uid}</td>
+                                    <td style="text-align: center">{nonExistsTable.tablename}</td>
+                                    <td style="text-align: center">
+                                        <be:link.editRecord table="tx_amt_pinecone_configindex"
+                                                            uid="{nonExistsTable.uid}">
+                                            <button type="button" class="btn btn-secondary">
+                                                Edit Record
+                                            </button>
+                                        </be:link.editRecord>
+                                    </td>
+                                </tr>
+                            </f:for>
+                            </tbody>
+                        </table>
                     </div>
                 </f:if>
                 <div class="mt-4">
