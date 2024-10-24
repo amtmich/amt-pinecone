@@ -15,3 +15,10 @@ services:
         command: 'amt-pinecone:indexing-to-pinecone'
         description: 'Indexing records to the Pinecone API'
         schedulable: true
+
+  Amt\AmtPinecone\ViewHelpers\PineconeSearchViewHelper:
+    calls:
+      - method: 'injectPineconeSearchService'
+        arguments:
+          $pineconeSearchService: '@Amt\AmtPinecone\Service\PineconeSearchService'
+    public: true

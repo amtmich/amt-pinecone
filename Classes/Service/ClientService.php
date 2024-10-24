@@ -82,13 +82,10 @@ class ClientService
         return $responseData->data[0]->embedding;
     }
 
-    public function getResultQuery(array $embeddings): array
+    public function getResultQueryWithParams(string $text, int $count, string $table): \stdClass
     {
-        $results = $this->pineconeClient->queryResult($embeddings);
-
-        return $results->matches;
+        return $this->pineconeClient->queryResult($this->generateEmbedding($text), $count, $table);
     }
-
     public function getTotalTokens()
     {
         return $this->registry->get('AmtPinecone', 'embeddings_prompt_tokens') ?? 0;

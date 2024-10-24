@@ -1,13 +1,14 @@
 <html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
       xmlns:be="http://typo3.org/ns/TYPO3/CMS/Backend/ViewHelpers"
       data-namespace-typo3-fluid="true">
+{namespace ext=Amt\AmtPinecone\ViewHelpers}
 <f:layout name="Base"/>
 <f:section name="Content">
     <h1>Pinecone Search - Results</h1>
     <f:link.action action="settings" controller="Settings" class="btn btn-secondary mb-3">
         Settings AmtPinecone
     </f:link.action>
-    <f:if condition="{results}">
+    <f:if condition="{query}">
         <h2>Results</h2>
         <table class="table table-striped">
             <thead>
@@ -20,7 +21,7 @@
             </tr>
             </thead>
             <tbody>
-            <f:for each="{results}" as="result">
+            <f:for each="{ext:pineconeSearch(query: '{query}')}" as="result">
                 <tr>
                     <td>{result.id}</td>
                     <td>{result.metadata.uid}</td>

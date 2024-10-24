@@ -119,18 +119,30 @@ class PineconeClient extends BaseClient
         ];
     }
 
-    public function queryResult(array $embeddings): \stdClass
+    public function queryResult(?array $embeddings, int $count, string $table): \stdClass
     {
+        if (empty($embeddings)) {
+            return new \stdClass();
+        }
+        if (!empty($table)) {
+            $filters = [
+                'tablename' =>
+                    [
+                        '$eq' => $table
+                    ],
+            ];
+        }
         $data = [
-            'topK' => 10,
+            'topK' => $count,
             'includeMetadata' => true,
             'vector' => $embeddings,
+            'filter' => $filters
         ];
+
         $response = $this->validateResponse($this->sendRequest($this->getRequestHeader(), '/query', 'POST', $this->serializeData($data), $this->optionalHost));
 
         return $response;
     }
-
 
     public function validateIndexProvidedByUser(): bool
     {
