@@ -8,4 +8,7 @@ plugin.tx_amtpinecone_amtpinecone {
     persistence {
         storagePid = 1
     }
+    viewHelpers {
+        pineconeSearch = EXT:amt_pinecone/ViewHelpers/PineconeSearchViewHelper
+    }
 }
