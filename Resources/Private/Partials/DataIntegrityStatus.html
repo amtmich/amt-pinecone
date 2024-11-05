@@ -1,0 +1,21 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
+      data-namespace-typo3-fluid="true"
+      lang="">
+<div class="card-header bg-secondary text-white">
+    <h3>Data integrity status
+        <f:render partial="ApiStatus" arguments="{validatedApiResponse: dataIntegrityStatus}"/>
+    </h3>
+    <br>
+</div>
+<div class="summary-count">
+    <ul class="list-group">
+        <li class="list-group-item">
+            <strong>Total indexed records - Pinecone API:</strong>
+            <span>{pineconeIndexedRecords}</span><br>
+        </li>
+        <li class="list-group-item">
+            <strong>Total indexed records - TYPO3:</strong>
+            <span>{typo3IndexedRecords}</span>
+        </li>
+    </ul>
+</div>

@@ -168,6 +168,22 @@ class ClientService
         return $this->pineconeRepository->fetchTablesToIndex();
     }
 
+    public function getIndexedRecordsCount(): int
+    {
+        $totalIndexedRecords = 0;
+        $indexedRecords = $this->getIndexingProgress();
+        foreach ($indexedRecords as $indexedRecord) {
+            $totalIndexedRecords += $indexedRecord['indexedRecords'];
+        }
+
+        return $totalIndexedRecords;
+    }
+
+    public function checkDataIntegrityStatus(int $pineconeIndexedRecords): bool
+    {
+        return $this->getIndexedRecordsCount() === $pineconeIndexedRecords;
+    }
+
     private function getTotalRecords(string $tableName): int
     {
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)

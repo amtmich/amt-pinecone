@@ -27,7 +27,8 @@
                         <span class="text-muted">{openAiDTO.modelForEmbeddings}</span>
                     </li>
                     <li class="list-group-item">
-                        <f:render partial="ApiStatus" arguments="{validatedApiResponse: pineconeDTO.validateIndexName}"/>
+                        <f:render partial="ApiStatus"
+                                  arguments="{validatedApiResponse: pineconeDTO.validateIndexName}"/>
                         Pinecone API index name:
                         <span class="text-muted">{pineconeDTO.indexName}</span>
                     </li>
@@ -121,6 +122,8 @@
                         </table>
                     </div>
                 </f:if>
+                <f:render partial="DataIntegrityStatus"
+                          arguments="{typo3IndexedRecords: indexingStatus.typo3IndexedRecords, pineconeIndexedRecords: indexingStatus.pineconeIndexedRecords, dataIntegrityStatus: indexingStatus.dataIntegrityStatus}"/>
                 <div class="mt-4">
                     <f:link.action action="index" controller="Search" class="btn btn-secondary">
                         Search with the Pinecone
