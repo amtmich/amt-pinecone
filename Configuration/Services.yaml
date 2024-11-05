@@ -16,6 +16,26 @@ services:
         description: 'Indexing records to the Pinecone API'
         schedulable: true
 
+  Amt\AmtPinecone\Command\PineconeDataIntegrityCommand:
+    tags:
+      -
+        name: console.command
+        command: 'amt-pinecone:data-integrity'
+        description: 'Data integrity - removes from index deleted records'
+        schedulable: true
+
+  Amt\AmtPinecone\Domain\Repository\PineconeRepository:
+    arguments:
+      $pineconeRepositoryQueryBuilder: '@queryBuilder.tx_amt_pinecone_pineconeindex'
+
+  queryBuilder.tx_amt_pinecone_pineconeindex:
+    class: 'TYPO3\CMS\Core\Database\Query\QueryBuilder'
+    factory:
+        - '@TYPO3\CMS\Core\Database\ConnectionPool'
+        - 'getQueryBuilderForTable'
+    arguments:
+        - 'tx_amt_pinecone_pineconeindex'
+
   Amt\AmtPinecone\ViewHelpers\PineconeSearchViewHelper:
     calls:
       - method: 'injectPineconeSearchService'

@@ -2,6 +2,8 @@
 
 namespace Amt\AmtPinecone\Controller;
 
+use Amt\AmtPinecone\DTO\OpenAiDTO;
+use Amt\AmtPinecone\DTO\PineconeDTO;
 use Amt\AmtPinecone\Http\Client\BaseClient;
 use Amt\AmtPinecone\Service\ClientService;
 use Amt\AmtPinecone\Utility\ClientUtility;
@@ -27,13 +29,30 @@ class SettingsController extends BaseController
         $openAiClient = ClientUtility::createOpenAiClient();
         $pineconeClient = ClientUtility::createPineconeClient();
         $pineconeValidateIndexName = $pineconeClient->validateIndexProvidedByUser();
-        $openAiValidateApiKey = $this->validateApiCall($openAiClient);
-        $pineconeValidateApiKey = $this->validateApiCall($pineconeClient);
         $openAiValidateModel = $openAiClient->validateEmbeddingModels();
-        $openAiAvailableTokens = $this->clientService->calculateAvailableTokens();
-        $indexingProgress = $this->clientService->getIndexingProgress();
 
-        if (!$this->clientService->hasTokensAvailable()) {
+        $openAiDTO = new OpenAiDTO(
+            $configuration['openAiApiKey'],
+            $configuration['openAiModelForEmbeddings'],
+            $openAiClient->getTotalTokens(),
+            $configuration['openAiTokenLimit'],
+            $openAiClient->calculateAvailableTokens(),
+            $this->validateApiCall($openAiClient),
+            $openAiValidateModel
+        );
+
+        $pineconeDTO = new PineconeDTO(
+            $configuration['pineconeApiKey'],
+            $pineconeClient->getOptionalHost(),
+            $pineconeClient->getIndexName(),
+            $pineconeClient->getAllIndexes(),
+            $this->validateApiCall($pineconeClient),
+            $pineconeValidateIndexName,
+            $this->clientService->getIndexingProgress(),
+            $this->clientService->getNonExistsTables()
+        );
+
+        if (!$openAiClient->hasTokensAvailable()) {
             $this->addFlashMessage('OpenAI API token limit exceeded.', '', ContextualFeedbackSeverity::ERROR);
         }
         if ($pineconeValidateIndexName === false) {
@@ -46,21 +65,8 @@ class SettingsController extends BaseController
 
         $moduleTemplate->assignMultiple(
             [
-                'openAiApiKey' => $configuration['openAiApiKey'],
-                'pineconeApiKey' => $configuration['pineconeApiKey'],
-                'openAiModelForEmbeddings' => $configuration['openAiModelForEmbeddings'],
-                'pineconeOptionalHost' => $pineconeClient->getOptionalHost(),
-                'pineconeIndexName' => $pineconeClient->getIndexName(),
-                'pineconeAllIndexes' => $pineconeClient->getAllIndexes(),
-                'openAiUsedTokens' => $this->clientService->getTotalTokens(),
-                'openAiTokenLimit' => $configuration['openAiTokenLimit'],
-                'openAiAvailableTokens' => $openAiAvailableTokens,
-                'validateOpenAiApiKey' => $openAiValidateApiKey,
-                'validatePineconeApiKey' => $pineconeValidateApiKey,
-                'validatePineconeIndexName' => $pineconeValidateIndexName,
-                'validateOpenAiModel' => $openAiValidateModel,
-                'indexingProgress' => $indexingProgress,
-                'nonExistsTables' => $this->clientService->getNonExistsTables()
+                'openAiDTO' => $openAiDTO,
+                'pineconeDTO' => $pineconeDTO,
             ]);
 
         return $moduleTemplate->renderResponse('Settings');

@@ -12,24 +12,24 @@
             <div class="card-body">
                 <ul class="list-group">
                     <li class="list-group-item">
-                        <f:render partial="ApiStatus" arguments="{validatedApiResponse: validateOpenAiApiKey}"/>
+                        <f:render partial="ApiStatus" arguments="{validatedApiResponse: openAiDTO.validateApiKey}"/>
                         OpenAI API Key:
-                        <span class="text-muted">{openAiApiKey}</span>
+                        <span class="text-muted">{openAiDTO.apiKey}</span>
                     </li>
                     <li class="list-group-item">
-                        <f:render partial="ApiStatus" arguments="{validatedApiResponse: validatePineconeApiKey}"/>
+                        <f:render partial="ApiStatus" arguments="{validatedApiResponse: pineconeDTO.validateApiKey}"/>
                         Pinecone API Key:
-                        <span class="text-muted">{pineconeApiKey}</span>
+                        <span class="text-muted">{pineconeDTO.apiKey}</span>
                     </li>
                     <li class="list-group-item">
-                        <f:render partial="ApiStatus" arguments="{validatedApiResponse: validateOpenAiModel}"/>
+                        <f:render partial="ApiStatus" arguments="{validatedApiResponse: openAiDTO.validateModel}"/>
                         OpenAI Model for Embeddings:
-                        <span class="text-muted">{openAiModelForEmbeddings}</span>
+                        <span class="text-muted">{openAiDTO.modelForEmbeddings}</span>
                     </li>
                     <li class="list-group-item">
-                        <f:render partial="ApiStatus" arguments="{validatedApiResponse: validatePineconeIndexName}"/>
+                        <f:render partial="ApiStatus" arguments="{validatedApiResponse: pineconeDTO.validateIndexName}"/>
                         Pinecone API index name:
-                        <span class="text-muted">{pineconeIndexName}</span>
+                        <span class="text-muted">{pineconeDTO.indexName}</span>
                     </li>
                 </ul>
                 <div class="mt-4">
@@ -38,27 +38,27 @@
                     </div>
                     <ul class="list-group">
                         <li class="list-group-item">Pinecone API index name: <span
-                                class="text-muted">{pineconeIndexName}</span></li>
-                        <li class="list-group-item">Pinecone API optional host: <span class="text-muted">{pineconeOptionalHost}</span>
+                                class="text-muted">{pineconeDTO.indexName}</span></li>
+                        <li class="list-group-item">Pinecone API optional host: <span class="text-muted">{pineconeDTO.optionalHost}</span>
                         </li>
                         <li class="list-group-item">Used OpenAI tokens by AmtPinecone extension: <span
-                                class="text-muted">{openAiUsedTokens}</span>
+                                class="text-muted">{openAiDTO.usedTokens}</span>
                         </li>
                         <li class="list-group-item">OpenAI available tokens: <span
-                                class="text-muted">{openAiAvailableTokens}</span>
+                                class="text-muted">{openAiDTO.availableTokens}</span>
                         </li>
                         <li class="list-group-item">OpenAI limit tokens: <span
-                                class="text-muted">{openAiTokenLimit}</span>
+                                class="text-muted">{openAiDTO.tokenLimit}</span>
                         </li>
                     </ul>
                 </div>
-                <f:if condition="{pineconeAllIndexes}">
+                <f:if condition="{pineconeDTO.allIndexes}">
                     <div class="mt-4">
                         <div class="card-header bg-secondary text-white">
                             <h3>List of existing indexes</h3><br>
                         </div>
                         <ul class="list-group">
-                            <f:for each="{pineconeAllIndexes}" as="index">
+                            <f:for each="{pineconeDTO.allIndexes}" as="index">
                                 <li class="list-group-item">
                                     <strong>Index Name:</strong> {index.name} <br>
                                     <strong>Host Name:</strong> {index.host}
@@ -73,7 +73,7 @@
                     </div>
                     <ul class="list-group">
                         <li class="list-group-item">
-                            <f:for each="{indexingProgress}" as="progressItem">
+                            <f:for each="{pineconeDTO.indexingProgress}" as="progressItem">
                                 <div class="mb-4">
                                     <strong>{progressItem.tableName}</strong> <span class="text-muted">({progressItem.indexedRecords}/{progressItem.totalRecords} records indexed)</span>
                                     <div class="progress">
@@ -89,7 +89,7 @@
                         </li>
                     </ul>
                 </div>
-                <f:if condition="{nonExistsTables}">
+                <f:if condition="{pineconeDTO.nonExistsTables}">
                     <div class="mt-4">
                         <div class="card-header bg-secondary text-white">
                             <h3>Invalid tables names configuration</h3><br>
@@ -103,7 +103,7 @@
                             </tr>
                             </thead>
                             <tbody>
-                            <f:for each="{nonExistsTables}" as="nonExistsTable">
+                            <f:for each="{pineconeDTO.nonExistsTables}" as="nonExistsTable">
                                 <tr>
                                     <td style="text-align: center">{nonExistsTable.uid}</td>
                                     <td style="text-align: center">{nonExistsTable.tablename}</td>

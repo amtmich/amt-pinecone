@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Amt\AmtPinecone\Http\Client;
 
+use Amt\AmtPinecone\Domain\Repository\PineconeRepository;
+use Amt\AmtPinecone\Utility\StringUtility;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 
 class PineconeClient extends BaseClient
@@ -15,13 +17,15 @@ class PineconeClient extends BaseClient
     protected string $baseUrl = 'https://api.pinecone.io/';
     protected ?string $optionalHost = '';
     protected ?string $indexName = null;
+    protected PineconeRepository $pineconeRepository;
 
-    public function __construct(ExtensionConfiguration $extensionConfiguration)
+    public function __construct(ExtensionConfiguration $extensionConfiguration, PineconeRepository $pineconeRepository)
     {
         parent::__construct();
         $this->clientApiKeyValue = $extensionConfiguration->get('amt_pinecone')[self::CLIENT_API_KEY] ?? '';
         $this->indexName = $extensionConfiguration->get('amt_pinecone')[self::INDEX_NAME] ?? '';
         $this->optionalHost = $this->getOptionalHostFromApi();
+        $this->pineconeRepository = $pineconeRepository;
     }
 
     public function getOptionalHost(): ?string
@@ -71,7 +75,7 @@ class PineconeClient extends BaseClient
 
     public function createIndex(string $indexName, int $indexDimensions = 1536, string $metric = 'cosine'): \stdClass
     {
-        $indexName = $this->getNewIndexNameIfEmpty($indexName);
+        $indexName = $this->getNewIndexName($indexName);
         $data = [
             'name' => $indexName,
             'dimension' => $indexDimensions,
@@ -165,7 +169,29 @@ class PineconeClient extends BaseClient
         return $this->getOptionalHost();
     }
 
-    private function getNewIndexNameIfEmpty(string $indexName): string
+    public function getVectorsList(): array
+    {
+        $result = $this->sendRequest($this->getRequestHeader(), '/vectors/list', 'GET', null, $this->optionalHost);
+
+        return json_decode($result, true)['vectors'];
+    }
+
+    public function vectorsDelete(array $recordsToDelete): void
+    {
+        $ids = [];
+        foreach ($recordsToDelete as $recordToDelete) {
+            isset($recordToDelete['tablename']) && isset($recordToDelete['record_uid'])
+                ? $ids[] = StringUtility::concatString($recordToDelete['tablename'], (string)$recordToDelete['record_uid'])
+                : $ids[] = $recordToDelete;
+        }
+        $jsonData = $this->serializeData(
+            [
+                'ids' => $ids
+            ]);
+        $this->validateResponse($this->sendRequest($this->getRequestHeader(), "/vectors/delete", 'POST', $jsonData, $this->getOptionalHost()));
+    }
+
+    private function getNewIndexName(string $indexName): string
     {
         if (empty($indexName)) {
             $indexName = 'index' . rand(0, 100);

@@ -3,13 +3,20 @@ return [
     'ctrl' => [
         'title' => 'Pinecone Index',
         'label' => 'record_uid',
-        'tstamp' => 'tstamp',
-        'crdate' => 'crdate',
         'delete' => 'deleted',
         'searchFields' => 'tablename,record_uid',
         'iconfile' => 'EXT:amt_pinecone/Resources/Public/Icons/Extension.svg',
+        'hideTable' => true,
     ],
     'columns' => [
+        'uid_pinecone' => [
+            'exclude' => true,
+            'label' => 'UID in the Pinecone API',
+            'config' => [
+                'type' => 'input',
+                'eval' => 'trim',
+            ],
+        ],
         'record_uid' => [
             'exclude' => true,
             'label' => 'Record UID',
@@ -44,6 +51,6 @@ return [
         ],
     ],
     'types' => [
-        '1' => ['showitem' => 'record_uid, tablename, is_indexed, indexed_timestamp'],
+        '1' => ['showitem' => 'uid_pinecone, record_uid, tablename, is_indexed, indexed_timestamp'],
     ],
 ];
