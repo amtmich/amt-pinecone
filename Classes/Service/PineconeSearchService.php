@@ -15,6 +15,6 @@ class PineconeSearchService
 
     public function search(string $query, int $count, string $table): \stdClass
     {
-        return $this->clientService->getResultQueryWithParams($query, $count, $table);
+        return $this->clientService->getResultQueryByParams($query, $count, $table);
     }
 }

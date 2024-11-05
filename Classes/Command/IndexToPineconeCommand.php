@@ -35,7 +35,7 @@ class IndexToPineconeCommand extends Command
 
     public function execute(InputInterface $input, OutputInterface $output): int
     {
-        $tablesToIndex = $this->clientService->fetchTablesToIndex();
+        $tablesToIndex = $this->clientService->getTablesToIndex();
 
         foreach ($tablesToIndex as $tableConfig) {
             $tableName = $tableConfig['tablename'];

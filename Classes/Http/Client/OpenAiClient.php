@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Amt\AmtPinecone\Http\Client;
 
+use Amt\AmtPinecone\Utility\ClientUtility;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
+use TYPO3\CMS\Core\Registry;
 
 class OpenAiClient extends BaseClient
 {
@@ -13,11 +15,17 @@ class OpenAiClient extends BaseClient
     protected string $baseUrl = 'https://api.openai.com/v1/';
     protected const MODEL_FOR_EMBEDDINGS = 'openAiModelForEmbeddings';
     protected string $openAiModelValue = '';
-    public function __construct(ExtensionConfiguration $extensionConfiguration)
+    protected mixed $configuration;
+    protected Registry $registry;
+
+    public function __construct(ExtensionConfiguration $extensionConfiguration, Registry $registry)
     {
         parent::__construct();
         $this->clientApiKeyValue = $extensionConfiguration->get('amt_pinecone')[self::CLIENT_API_KEY] ?? '';
         $this->openAiModelValue = $extensionConfiguration->get('amt_pinecone')[self::MODEL_FOR_EMBEDDINGS] ?? '';
+        $this->configuration = ClientUtility::createExtensionConfigurationObject()->get('amt_pinecone');
+        $this->registry = $registry;
+
     }
 
     public function validateResponse($response): \stdClass
@@ -67,5 +75,47 @@ class OpenAiClient extends BaseClient
         } catch (\Exception $e) {
         }
         return false;
+    }
+
+    public function generateEmbedding(string $text): ?array
+    {
+        $data = [
+            'input' => $text,
+            'model' => $this->configuration['openAiModelForEmbeddings']
+        ];
+        $jsonData = $this->serializeData($data);
+
+        if (!$this->hasTokensAvailable()) {
+            throw new \Exception('OpenAI API token limit exceeded.', 401);
+        }
+
+        $responseData = $this->validateResponse($this->sendRequest($this->getRequestHeader(), 'embeddings', 'POST', $jsonData));
+        $this->sumUpUsedTokensOpenAi($responseData->usage->prompt_tokens);
+
+        return $responseData->data[0]->embedding;
+    }
+
+    public function sumUpUsedTokensOpenAi(?int $usedTokens): void
+    {
+        if ($usedTokens) {
+            $currentTotalTokens = $this->getTotalTokens();
+            $updatedTotalTokens = $currentTotalTokens + $usedTokens;
+            $this->registry->set('AmtPinecone', 'embeddings_prompt_tokens', $updatedTotalTokens);
+        }
+    }
+
+    public function calculateAvailableTokens(): int
+    {
+        return max(0, (int)$this->configuration['openAiTokenLimit'] - $this->getTotalTokens());
+    }
+
+    public function hasTokensAvailable(): bool
+    {
+        return $this->calculateAvailableTokens() > 0;
+    }
+
+    public function getTotalTokens()
+    {
+        return $this->registry->get('AmtPinecone', 'embeddings_prompt_tokens') ?? 0;
     }
 }

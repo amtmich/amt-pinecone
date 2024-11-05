@@ -1,6 +1,7 @@
 CREATE TABLE tx_amt_pinecone_pineconeindex
 (
     uid               int(11)              NOT NULL AUTO_INCREMENT,
+    uid_pinecone      varchar(255)         NOT NULL,
     record_uid        int(11)              NOT NULL,
     tablename         varchar(255)         NOT NULL,
     is_indexed        tinyint(1) DEFAULT 0 NOT NULL,

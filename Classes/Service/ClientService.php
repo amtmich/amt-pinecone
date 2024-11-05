@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace Amt\AmtPinecone\Service;
 
+use Amt\AmtPinecone\Domain\Repository\PineconeRepository;
 use \Amt\AmtPinecone\Http\Client\OpenAiClient;
 use \Amt\AmtPinecone\Http\Client\PineconeClient;
-use Amt\AmtPinecone\Utility\ClientUtility;
-use TYPO3\CMS\Core\Registry;
+use Amt\AmtPinecone\Utility\StringUtility;
 use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
-use \TYPO3\CMS\Core\Utility\StringUtility;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
@@ -19,92 +18,23 @@ class ClientService
 {
     protected OpenAiClient $openAiClient;
     protected PineconeClient $pineconeClient;
-    protected Registry $registry;
-    protected mixed $configuration;
+    protected PineconeRepository $pineconeRepository;
 
-    public function __construct(OpenAiClient $openAiClient, PineconeClient $pineconeClient, Registry $registry)
+    public function __construct(OpenAiClient $openAiClient, PineconeClient $pineconeClient, PineconeRepository $pineconeRepository)
     {
         $this->openAiClient = $openAiClient;
         $this->pineconeClient = $pineconeClient;
-        $this->registry = $registry;
-        $this->configuration = ClientUtility::createExtensionConfigurationObject()->get('amt_pinecone');
+        $this->pineconeRepository = $pineconeRepository;
     }
 
-    public function indexRecordsToPinecone(string $tableName, int $batchSize): void
+    public function getResultQueryByParams(string $text, int $count, string $table): \stdClass
     {
-        $offset = 0;
-
-        do {
-            $records = $this->fetchRecords($tableName, $batchSize, $offset);
-            $offset += $batchSize;
-
-            foreach ($records as $record) {
-                $embedding = $this->getEmbeddingFromRecord($record, $tableName);
-                if ($embedding) {
-                    $indexData = [
-                        'id' => StringUtility::getUniqueId('uid' . $record['uid']),
-                        'values' => $embedding,
-                        'metadata' => [
-                            'tablename' => $tableName,
-                            'uid' => $record['uid'],
-                        ],
-                    ];
-                    $jsonData = $this->pineconeClient->serializeData(
-                        [
-                            'vectors' => $indexData
-                        ],
-                    );
-                    $result = $this->pineconeClient->validateResponse($this->pineconeClient->sendRequest($this->pineconeClient->getRequestHeader(), "/vectors/upsert", 'POST', $jsonData, $this->pineconeClient->getOptionalHost()));
-                    if ($result) {
-                        $this->storeIndexedRecord($record['uid'], $tableName);
-                    }
-                }
-            }
-
-        } while (count($records) > 0);
-    }
-
-    public function generateEmbedding(string $text): ?array
-    {
-        $data = [
-            'input' => $text,
-            'model' => $this->configuration['openAiModelForEmbeddings']
-        ];
-        $jsonData = $this->openAiClient->serializeData($data);
-
-        if (!$this->hasTokensAvailable()) {
-            throw new \Exception('OpenAI API token limit exceeded.', 401);
-        }
-
-        $responseData = $this->openAiClient->validateResponse($this->openAiClient->sendRequest($this->openAiClient->getRequestHeader(), 'embeddings', 'POST', $jsonData));
-        $this->sumUpUsedTokensOpenAi($responseData->usage->prompt_tokens);
-
-        return $responseData->data[0]->embedding;
-    }
-
-    public function getResultQueryWithParams(string $text, int $count, string $table): \stdClass
-    {
-        return $this->pineconeClient->queryResult($this->generateEmbedding($text), $count, $table);
-    }
-    public function getTotalTokens()
-    {
-        return $this->registry->get('AmtPinecone', 'embeddings_prompt_tokens') ?? 0;
-    }
-
-    public function fetchTablesToIndex(): array
-    {
-        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
-            ->getQueryBuilderForTable('tx_amt_pinecone_configindex');
-
-        return $queryBuilder->select('*')
-            ->from('tx_amt_pinecone_configindex')
-            ->executeQuery()
-            ->fetchAllAssociative();
+        return $this->pineconeClient->queryResult($this->openAiClient->generateEmbedding($text), $count, $table);
     }
 
     public function getIndexingProgress(): array
     {
-        $tablesToIndex = $this->fetchTablesToIndex();
+        $tablesToIndex = $this->getTablesToIndex();
         $indexingProgress = [];
 
         foreach ($tablesToIndex as $record) {
@@ -114,7 +44,7 @@ class ClientService
                 continue;
             }
             $totalRecords = $this->getTotalRecords($tableName);
-            $indexedRecords = $this->getIndexedRecords($tableName);
+            $indexedRecords = $this->pineconeRepository->getIndexedRecordsCount($tableName);
             $progress = ($totalRecords > 0) ? ($indexedRecords / $totalRecords) * 100 : 0;
 
             $indexingProgress[] = [
@@ -152,22 +82,12 @@ class ClientService
         $messageQueue->addMessage($message);
     }
 
-    public function calculateAvailableTokens(): int
-    {
-        return max(0, (int)$this->configuration['openAiTokenLimit'] - $this->getTotalTokens());
-    }
-
-    public function hasTokensAvailable(): bool
-    {
-        return $this->calculateAvailableTokens() > 0;
-    }
-
     /**
      * @return array<int,string>
      */
     public function getNonExistsTables(): array
     {
-        $tablesToIndex = $this->fetchTablesToIndex();
+        $tablesToIndex = $this->getTablesToIndex();
         $nonExistsTables = [];
         foreach ($tablesToIndex as $record) {
             $tableName = $record['tablename'];
@@ -184,71 +104,52 @@ class ClientService
         return $nonExistsTables;
     }
 
-    private function storeIndexedRecord(int $uid, string $tableName): void
+    public function compareLocalToPinecone(): array
     {
-        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
-            ->getQueryBuilderForTable('tx_amt_pinecone_pineconeindex');
-
-        $queryBuilder
-            ->insert('tx_amt_pinecone_pineconeindex')
-            ->values([
-                'record_uid' => $uid,
-                'tablename' => $tableName,
-                'is_indexed' => 1,
-                'indexed_timestamp' => time(),
-            ])
-            ->executeStatement();
+        return array_diff(array_column($this->pineconeClient->getVectorsList(), 'id'), $this->pineconeRepository->getPineconeRecordsUids());
     }
 
-    private function fetchRecords(string $tableName, int $limit, int $offset): array
+    public function findDetachedRecordsInPinecone(): array
     {
-        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
-        $queryBuilder = $connectionPool->getQueryBuilderForTable($tableName);
-        $schemaManager = $connectionPool->getConnectionForTable($tableName)->createSchemaManager();
-        $columns = $schemaManager->listTableColumns($tableName);
-        $conditions = [];
-        $secondConditions = [
-            $queryBuilder->expr()->eq('t.uid', 'i.record_uid'),
-            $queryBuilder->expr()->eq('i.tablename', $queryBuilder->createNamedParameter($tableName, \PDO::PARAM_STR)),
-            $queryBuilder->expr()->eq('i.is_indexed', $queryBuilder->createNamedParameter(1, \PDO::PARAM_INT))
-        ];
-
-        if (isset($columns['deleted'])) {
-            $conditions[] = $queryBuilder->expr()->eq('t.deleted', $queryBuilder->createNamedParameter(0, \PDO::PARAM_INT));
-        }
-
-        $conditions[] = $queryBuilder->expr()->isNull('i.record_uid');
-        $compositeExpression = $queryBuilder->expr()->and(
-            ...$secondConditions
-        );
-        $joinCondition = (string)$compositeExpression;
-
-        $query = $queryBuilder
-            ->select('t.*')
-            ->from($tableName, 't')
-            ->leftJoin(
-                't',
-                'tx_amt_pinecone_pineconeindex',
-                'i',
-                $joinCondition
-            )
-            ->where(
-                ...$conditions,
-            )
-            ->setMaxResults($limit)
-            ->setFirstResult($offset)
-            ->executeQuery();
-
-        return $query->fetchAllAssociative();
+        return array_diff($this->pineconeRepository->getPineconeRecordsUids(), array_column($this->pineconeClient->getVectorsList(), 'id'));
     }
 
-    private function getSearchFields(string $tableName): array
+    public function indexRecordsToPinecone(string $tableName, int $batchSize): void
     {
-        $tca = $GLOBALS['TCA'][$tableName]['ctrl']['searchFields'] ?? '';
-        return GeneralUtility::trimExplode(',', $tca, true);
+        $offset = 0;
+
+        do {
+            $records = $this->pineconeRepository->fetchRecords($tableName, $batchSize, $offset);
+            $offset += $batchSize;
+
+            foreach ($records as $record) {
+                $embedding = $this->getEmbeddingFromRecord($record, $tableName);
+                if ($embedding) {
+                    $uidPinecone = StringUtility::concatString($tableName, (string)$record['uid']);
+                    $indexData = [
+                        'id' => $uidPinecone,
+                        'values' => $embedding,
+                        'metadata' => [
+                            'tablename' => $tableName,
+                            'uid' => $record['uid'],
+                        ],
+                    ];
+                    $jsonData = $this->pineconeClient->serializeData(
+                        [
+                            'vectors' => $indexData
+                        ],
+                    );
+                    $result = $this->pineconeClient->validateResponse($this->pineconeClient->sendRequest($this->pineconeClient->getRequestHeader(), "/vectors/upsert", 'POST', $jsonData, $this->pineconeClient->getOptionalHost()));
+                    if ($result) {
+                        $this->pineconeRepository->saveIndexedRecord($record['uid'], $tableName, $uidPinecone);
+                    }
+                }
+            }
+
+        } while (count($records) > 0);
     }
 
-    private function getEmbeddingFromRecord(array $record, string $tableName): ?array
+    public function getEmbeddingFromRecord(array $record, string $tableName): ?array
     {
         $fields = $this->getSearchFields($tableName);
         $concatenatedFields = '';
@@ -259,16 +160,12 @@ class ClientService
             }
         }
 
-        return $this->generateEmbedding($concatenatedFields);
+        return $this->openAiClient->generateEmbedding($concatenatedFields);
     }
 
-    private function sumUpUsedTokensOpenAi(?int $usedTokens): void
+    public function getTablesToIndex(): array
     {
-        if ($usedTokens) {
-            $currentTotalTokens = $this->getTotalTokens();
-            $updatedTotalTokens = $currentTotalTokens + $usedTokens;
-            $this->registry->set('AmtPinecone', 'embeddings_prompt_tokens', $updatedTotalTokens);
-        }
+        return $this->pineconeRepository->fetchTablesToIndex();
     }
 
     private function getTotalRecords(string $tableName): int
@@ -282,17 +179,9 @@ class ClientService
             ->fetchOne();
     }
 
-    private function getIndexedRecords(string $tableName): int
+    private function getSearchFields(string $tableName): array
     {
-        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
-            ->getQueryBuilderForTable('tx_amt_pinecone_pineconeindex');
-
-        return (int)$queryBuilder->count('uid')
-            ->from('tx_amt_pinecone_pineconeindex')
-            ->where(
-                $queryBuilder->expr()->eq('tablename', $queryBuilder->createNamedParameter($tableName, \PDO::PARAM_STR)),
-            )
-            ->executeQuery()
-            ->fetchOne();
+        $tca = $GLOBALS['TCA'][$tableName]['ctrl']['searchFields'] ?? '';
+        return GeneralUtility::trimExplode(',', $tca, true);
     }
 }
