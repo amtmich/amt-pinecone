@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Amt\AmtPinecone\Service;
 
+use Amt\AmtPinecone\Domain\Repository\PineconeConfigIndexRepository;
 use Amt\AmtPinecone\Domain\Repository\PineconeRepository;
 use \Amt\AmtPinecone\Http\Client\OpenAiClient;
 use \Amt\AmtPinecone\Http\Client\PineconeClient;
@@ -151,13 +152,21 @@ class ClientService
 
     public function getEmbeddingFromRecord(array $record, string $tableName): ?array
     {
-        $fields = $this->getSearchFields($tableName);
+        $indexFieldsDefault = $this->getSearchFields($tableName);
         $concatenatedFields = '';
+        $pineconeConfigIndexRepository = GeneralUtility::makeInstance(PineconeConfigIndexRepository::class);
+        $indexFieldsConfiguration = $pineconeConfigIndexRepository->getRecordColumnsIndex($tableName)[0]['columns_index'];
+        if ($indexFieldsConfiguration === null) {
+            $indexFieldsConfiguration = '';
+        }
+        $indexFieldsFromConfiguration = array_filter(explode(',', $indexFieldsConfiguration) ?? []);
+        $indexFieldsFromConfiguration = $indexFieldsFromConfiguration === [] ? $indexFieldsDefault : $indexFieldsFromConfiguration;
 
-        foreach ($fields as $field) {
-            if (isset($record[$field])) {
-                $concatenatedFields .= ' ' . strip_tags($record[$field]);
+        foreach ($indexFieldsDefault as $field) {
+            if (!isset($record[$field]) || !in_array($field, $indexFieldsFromConfiguration)) {
+                continue;
             }
+            $concatenatedFields .= ' ' . strip_tags($record[$field]);
         }
 
         return $this->openAiClient->generateEmbedding($concatenatedFields);

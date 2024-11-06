@@ -12,8 +12,9 @@ CREATE TABLE tx_amt_pinecone_pineconeindex
 
 CREATE TABLE tx_amt_pinecone_configindex
 (
-    uid          int(11)      NOT NULL AUTO_INCREMENT,
-    tablename    varchar(255) NOT NULL,
-    pid          int(11)      NOT NULL DEFAULT 0,
+    uid           int(11)      NOT NULL AUTO_INCREMENT,
+    tablename     varchar(255) NOT NULL,
+    columns_index varchar(255) DEFAULT NULL,
+    pid           int(11)      NOT NULL DEFAULT 0,
     PRIMARY KEY (uid)
 );

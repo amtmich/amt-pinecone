@@ -21,6 +21,14 @@ return [
                 'eval' => 'trim,required',
             ],
         ],
+        'columns_index' => [
+            'label' => 'Columns to index',
+            'config' => [
+                'type' => 'input',
+                'size' => 255,
+                'eval' => 'trim',
+            ],
+        ],
         'crdate' => [
             'config' => [
                 'type' => 'passthrough',
@@ -28,6 +36,6 @@ return [
         ],
     ],
     'types' => [
-        '0' => ['showitem' => 'tablename'],
+        '0' => ['showitem' => 'tablename, columns_index'],
     ],
 ];
