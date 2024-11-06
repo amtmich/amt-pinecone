@@ -30,6 +30,14 @@ class SettingsController extends BaseController
         $pineconeClient = ClientUtility::createPineconeClient();
         $pineconeValidateIndexName = $pineconeClient->validateIndexProvidedByUser();
         $openAiValidateModel = $openAiClient->validateEmbeddingModels();
+        $pineconeIndexedRecords = count($pineconeClient->getVectorsList());
+        $dataIntegrityStatus = $this->clientService->checkDataIntegrityStatus($pineconeIndexedRecords);
+
+        $indexingStatus = [
+            'typo3IndexedRecords' => $this->clientService->getIndexedRecordsCount(),
+            'pineconeIndexedRecords' => $pineconeIndexedRecords,
+            'dataIntegrityStatus' => $dataIntegrityStatus,
+        ];
 
         $openAiDTO = new OpenAiDTO(
             $configuration['openAiApiKey'],
@@ -52,21 +60,16 @@ class SettingsController extends BaseController
             $this->clientService->getNonExistsTables()
         );
 
-        if (!$openAiClient->hasTokensAvailable()) {
-            $this->addFlashMessage('OpenAI API token limit exceeded.', '', ContextualFeedbackSeverity::ERROR);
-        }
-        if ($pineconeValidateIndexName === false) {
-            $this->addFlashMessage('Index name is invalid.', '', ContextualFeedbackSeverity::ERROR);
-        }
-
-        if ($openAiValidateModel === false) {
-            $this->addFlashMessage('Please provide a valid OpenAI model for embeddings.', '', ContextualFeedbackSeverity::ERROR);
-        }
+        $this->displayFlashMessage('OpenAI API token limit exceeded.', $openAiClient->hasTokensAvailable(), 2);
+        $this->displayFlashMessage('Index name is invalid.', $pineconeValidateIndexName, 2);
+        $this->displayFlashMessage('Please provide a valid OpenAI model for embeddings.', $openAiValidateModel, 2);
+        $this->displayFlashMessage('Potential integrity problems - please run scheduler command "amt-pinecone:data-integrity".', $dataIntegrityStatus, 1);
 
         $moduleTemplate->assignMultiple(
             [
                 'openAiDTO' => $openAiDTO,
                 'pineconeDTO' => $pineconeDTO,
+                'indexingStatus' => $indexingStatus
             ]);
 
         return $moduleTemplate->renderResponse('Settings');
@@ -81,5 +84,12 @@ class SettingsController extends BaseController
             return false;
         }
         return true;
+    }
+
+    public function displayFlashMessage(string $messageBody, bool $boolValue, int $feedbackSeverity): void
+    {
+        if (!$boolValue) {
+            $this->addFlashMessage($messageBody, '', $feedbackSeverity);
+        }
     }
 }
