@@ -48,6 +48,11 @@ class PineconeClient extends BaseClient
         $this->indexName = $indexName;
     }
 
+    /**
+     * @param string|bool $response
+     *
+     * @throws \Exception
+     */
     public function validateResponse($response): \stdClass
     {
         if (!is_string($response)) {
@@ -83,15 +88,18 @@ class PineconeClient extends BaseClient
             'spec' => [
                 'serverless' => [
                     'cloud' => 'aws',
-                    'region' => 'us-east-1'
-                ]
-            ]
+                    'region' => 'us-east-1',
+                ],
+            ],
         ];
         $response = $this->validateResponse($this->sendRequest($this->getRequestHeader(), 'indexes', 'POST', $this->serializeData($data)));
 
         return $response;
     }
 
+    /**
+     * @return array<array<string,string>>
+     */
     public function getAllIndexes(): array
     {
         $response = $this->sendRequest($this->getRequestHeader(), 'indexes', 'GET');
@@ -123,24 +131,30 @@ class PineconeClient extends BaseClient
         ];
     }
 
+    /**
+     * @param array<int,float|int>|null $embeddings
+     *
+     * @throws \Exception
+     */
     public function queryResult(?array $embeddings, int $count, string $table): \stdClass
     {
+        $filters = [];
+
         if (empty($embeddings)) {
             return new \stdClass();
         }
         if (!empty($table)) {
             $filters = [
-                'tablename' =>
-                    [
-                        '$eq' => $table
-                    ],
+                'tablename' => [
+                    '$eq' => $table,
+                ],
             ];
         }
         $data = [
             'topK' => $count,
             'includeMetadata' => true,
             'vector' => $embeddings,
-            'filter' => $filters
+            'filter' => $filters,
         ];
 
         $response = $this->validateResponse($this->sendRequest($this->getRequestHeader(), '/query', 'POST', $this->serializeData($data), $this->optionalHost));
@@ -156,19 +170,23 @@ class PineconeClient extends BaseClient
                 return true;
             }
         }
+
         return false;
     }
 
     public function getOptionalHostFromApi(): string
     {
         if ($this->validateIndexProvidedByUser()) {
-            $response = $this->validateResponse($this->sendRequest($this->getRequestHeader(), 'indexes/' . $this->indexName, 'GET'));
-            $this->setOptionalHost("https://".$response->host);
+            $response = $this->validateResponse($this->sendRequest($this->getRequestHeader(), 'indexes/'.$this->indexName, 'GET'));
+            $this->setOptionalHost('https://'.$response->host);
         }
 
         return $this->getOptionalHost();
     }
 
+    /**
+     * @return array<string>
+     */
     public function getVectorsList(): array
     {
         $result = $this->sendRequest($this->getRequestHeader(), '/vectors/list', 'GET', null, $this->optionalHost);
@@ -176,25 +194,30 @@ class PineconeClient extends BaseClient
         return json_decode($result, true)['vectors'];
     }
 
+    /**
+     * @param array<int,array<string,string|int>>|array<int,string> $recordsToDelete
+     *
+     * @throws \Exception
+     */
     public function vectorsDelete(array $recordsToDelete): void
     {
         $ids = [];
         foreach ($recordsToDelete as $recordToDelete) {
             isset($recordToDelete['tablename']) && isset($recordToDelete['record_uid'])
-                ? $ids[] = StringUtility::concatString($recordToDelete['tablename'], (string)$recordToDelete['record_uid'])
+                ? $ids[] = StringUtility::concatString((string) $recordToDelete['tablename'], (string) $recordToDelete['record_uid'])
                 : $ids[] = $recordToDelete;
         }
         $jsonData = $this->serializeData(
             [
-                'ids' => $ids
+                'ids' => $ids,
             ]);
-        $this->validateResponse($this->sendRequest($this->getRequestHeader(), "/vectors/delete", 'POST', $jsonData, $this->getOptionalHost()));
+        $this->validateResponse($this->sendRequest($this->getRequestHeader(), '/vectors/delete', 'POST', $jsonData, $this->getOptionalHost()));
     }
 
     private function getNewIndexName(string $indexName): string
     {
         if (empty($indexName)) {
-            $indexName = 'index' . rand(0, 100);
+            $indexName = 'index'.rand(0, 100);
             $this->setIndexName($indexName);
         }
 

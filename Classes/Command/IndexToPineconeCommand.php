@@ -6,21 +6,19 @@ namespace Amt\AmtPinecone\Command;
 
 use Amt\AmtPinecone\Service\ClientService;
 use Amt\AmtPinecone\Utility\ClientUtility;
-use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Command\Command;
 
 class IndexToPineconeCommand extends Command
 {
-
     private ClientService $clientService;
     private int $batchSize;
 
     public function __construct(ClientService $clientService)
     {
         parent::__construct();
-        $this->batchSize = (int)ClientUtility::createExtensionConfigurationObject()->get('amt_pinecone')['pineconeBatchSize'] ?? 10;
+        $this->batchSize = (int) ClientUtility::createExtensionConfigurationObject()->get('amt_pinecone')['pineconeBatchSize'];
         $this->clientService = $clientService;
     }
 
@@ -38,7 +36,7 @@ class IndexToPineconeCommand extends Command
         $tablesToIndex = $this->clientService->getTablesToIndex();
 
         foreach ($tablesToIndex as $tableConfig) {
-            $tableName = $tableConfig['tablename'];
+            $tableName = (string) $tableConfig['tablename'];
             if (!$this->clientService->doesTableExist($tableName)) {
                 $this->clientService->sendFlashMessage('The table "'.$tableName.'" does not exist in the database.');
                 continue;

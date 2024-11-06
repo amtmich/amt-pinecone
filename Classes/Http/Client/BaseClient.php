@@ -31,30 +31,42 @@ abstract class BaseClient implements ClientInterface
         return new \stdClass();
     }
 
+    /**
+     * @param array<string,string> $header
+     */
     public function sendRequest(array $header, string $url, string $method, ?string $jsonData = null, ?string $optionalHost = null): string
     {
         $host = empty($optionalHost) ? $this->baseUrl : $optionalHost;
         $response = $this->client->request(
             $method,
-            $host . $url,
+            $host.$url,
             [
                 'headers' => $header,
-                'body' => $jsonData
+                'body' => $jsonData,
             ]
         );
 
         return $response->getContent(false);
     }
 
-    public function serializeData(array $data): false|string
+    /**
+     * @param array<mixed> $data
+     */
+    public function serializeData(array $data): ?string
     {
-        return \json_encode($data);
+        $encodedData = \json_encode($data);
+        if (false === $encodedData) {
+            return null;
+        }
+
+        return $encodedData;
     }
 
     public function validateApiKey(): bool
     {
         try {
             $this->getTestApiCall();
+
             return true;
         } catch (\Exception $e) {
             return false;

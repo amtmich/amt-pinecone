@@ -21,6 +21,11 @@
   "extra": {
     "typo3/cms": {
       "extension-key": "amt_pinecone"
+    },
+    "phpstan": {
+      "includes": [
+        "extension.neon"
+      ]
     }
   },
   "config": {
@@ -39,6 +44,7 @@
   },
   "scripts": {
     "cs-fix": "php-cs-fixer fix",
-    "phpstan": "phpstan analyse"
+    "phpstan": "phpstan analyse",
+    "phpstan-container": "/var/www/html/vendor/bin/phpstan analyse -c phpstan.neon"
   }
 }

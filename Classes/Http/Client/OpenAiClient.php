@@ -25,13 +25,16 @@ class OpenAiClient extends BaseClient
         $this->openAiModelValue = $extensionConfiguration->get('amt_pinecone')[self::MODEL_FOR_EMBEDDINGS] ?? '';
         $this->configuration = ClientUtility::createExtensionConfigurationObject()->get('amt_pinecone');
         $this->registry = $registry;
-
     }
 
+    /**
+     * @param string|bool $response
+     *
+     * @throws \Exception
+     */
     public function validateResponse($response): \stdClass
     {
         if (!is_string($response)) {
-
             throw new \Exception('Error, please provide a valid API key.');
         }
         $response = $this->decodeData($response);
@@ -39,6 +42,7 @@ class OpenAiClient extends BaseClient
         if ($response->error ?? null) {
             throw new \Exception($response->error->message);
         }
+
         return $response;
     }
 
@@ -53,6 +57,9 @@ class OpenAiClient extends BaseClient
         return $response;
     }
 
+    /**
+     * @return array<string,string>
+     */
     public function getRequestHeader(): array
     {
         return [
@@ -71,17 +78,24 @@ class OpenAiClient extends BaseClient
                     return true;
                 }
             }
+
             return false;
         } catch (\Exception $e) {
         }
+
         return false;
     }
 
+    /**
+     * @return array<int,float|int>|null
+     *
+     * @throws \Exception
+     */
     public function generateEmbedding(string $text): ?array
     {
         $data = [
             'input' => $text,
-            'model' => $this->configuration['openAiModelForEmbeddings']
+            'model' => $this->configuration['openAiModelForEmbeddings'],
         ];
         $jsonData = $this->serializeData($data);
 
@@ -106,7 +120,7 @@ class OpenAiClient extends BaseClient
 
     public function calculateAvailableTokens(): int
     {
-        return max(0, (int)$this->configuration['openAiTokenLimit'] - $this->getTotalTokens());
+        return (int) max(0, (int) $this->configuration['openAiTokenLimit'] - $this->getTotalTokens());
     }
 
     public function hasTokensAvailable(): bool
@@ -114,7 +128,7 @@ class OpenAiClient extends BaseClient
         return $this->calculateAvailableTokens() > 0;
     }
 
-    public function getTotalTokens()
+    public function getTotalTokens(): int
     {
         return $this->registry->get('AmtPinecone', 'embeddings_prompt_tokens') ?? 0;
     }
