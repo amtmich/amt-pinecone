@@ -10,12 +10,16 @@ use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
 use TYPO3\CMS\Core\Database\Query\Restriction\HiddenRestriction;
+use TYPO3\CMS\Extbase\Persistence\QueryResultInterface;
 use TYPO3\CMS\Extbase\Persistence\Repository;
 
+/**
+ * @extends Repository<Pinecone>
+ */
 class PineconeRepository extends Repository
 {
-    const TABLENAME = 'tx_amt_pinecone_pineconeindex';
-    const TABLENAME_CONFIG = 'tx_amt_pinecone_configindex';
+    public const TABLENAME = 'tx_amt_pinecone_pineconeindex';
+    public const TABLENAME_CONFIG = 'tx_amt_pinecone_configindex';
     private ConnectionPool $connectionPool;
     private QueryBuilder $pineconeRepositoryQueryBuilder;
 
@@ -26,15 +30,26 @@ class PineconeRepository extends Repository
         $this->pineconeRepositoryQueryBuilder = $pineconeRepositoryQueryBuilder;
     }
 
+    /**
+     * @return array<int,array<string,string|int>>
+     *
+     * @throws \Doctrine\DBAL\Exception
+     */
     public function getDetachedRecords(): array
     {
         $detachedRecords = [];
         $connection = $this->connectionPool->getConnectionForTable(self::TABLENAME);
+        $arrayRelatedTables = [];
 
-        $relatedTables = $this->findAll()->toArray();
+        $relatedTables = $this->findAll();
+
+        if ($relatedTables instanceof QueryResultInterface) {
+            $arrayRelatedTables = $relatedTables->toArray();
+        }
         $uniqueTableNames = [];
 
-        foreach ($relatedTables as $record) {
+        /** @var Pinecone $record */
+        foreach ($arrayRelatedTables as $record) {
             $tableName = $record->getTableName();
             if (!in_array($tableName, $uniqueTableNames, true)) {
                 $uniqueTableNames[] = $tableName;
@@ -50,23 +65,23 @@ class PineconeRepository extends Repository
             $connection = $this->connectionPool->getConnectionForTable($tableName);
             $schemaManager = $connection->createSchemaManager();
             $columns = $schemaManager->listTableColumns($tableName);
-            $uidField = isset($columns['uid']) ? 'uid' : null;;
+            $uidField = isset($columns['uid']) ? 'uid' : null;
             $deletedField = isset($columns['deleted']) ? 'deleted' : null;
 
-            $secondConditions[] = $expr->eq(self::TABLENAME . '.record_uid', $tableName . '.' . $uidField);
+            $secondConditions[] = $expr->eq(self::TABLENAME.'.record_uid', $tableName.'.'.$uidField);
             $compositeExpression = $queryBuilder->expr()->and(
                 ...$secondConditions
             );
-            $joinCondition = (string)$compositeExpression;
-            $conditions[] = $expr->isNull($tableName . '.' . $uidField);
+            $joinCondition = (string) $compositeExpression;
+            $conditions[] = $expr->isNull($tableName.'.'.$uidField);
 
-            if ($deletedField === null) {
-                $conditions[] = $expr->eq(self::TABLENAME . '.tablename', $queryBuilder->createNamedParameter($tableName, \PDO::PARAM_STR));
+            if (null === $deletedField) {
+                $conditions[] = $expr->eq(self::TABLENAME.'.tablename', $queryBuilder->createNamedParameter($tableName, \PDO::PARAM_STR));
                 $queryBuilder->where($expr->and(...$conditions));
             } else {
-                $conditions[] = $expr->eq($tableName . '.' . $deletedField, $queryBuilder->createNamedParameter(1, \PDO::PARAM_INT));
+                $conditions[] = $expr->eq($tableName.'.'.$deletedField, $queryBuilder->createNamedParameter(1, \PDO::PARAM_INT));
                 $queryBuilder->where($expr->or(...$conditions));
-                $queryBuilder->andWhere($expr->eq(self::TABLENAME . '.tablename', $queryBuilder->createNamedParameter($tableName, \PDO::PARAM_STR)));
+                $queryBuilder->andWhere($expr->eq(self::TABLENAME.'.tablename', $queryBuilder->createNamedParameter($tableName, \PDO::PARAM_STR)));
             }
 
             $queryBuilder->leftJoin(
@@ -82,6 +97,9 @@ class PineconeRepository extends Repository
         return $detachedRecords;
     }
 
+    /**
+     * @param array<mixed> $recordsToDelete
+     */
     public function hardDelete(array $recordsToDelete): void
     {
         if (empty($recordsToDelete)) {
@@ -95,46 +113,77 @@ class PineconeRepository extends Repository
         $this->pineconeRepositoryQueryBuilder->executeStatement();
     }
 
+    /**
+     * @param array<mixed> $recordsToDelete
+     */
     public function softDelete(array $recordsToDelete): void
     {
         if (empty($recordsToDelete)) {
             return;
         }
 
+        /*
+         * @var array<int,array<string,int|string>> $recordsToDelete
+         */
         foreach ($recordsToDelete as $recordToDelete) {
-            $record = $this->findByUid((int)$recordToDelete['uid']);
+            if (!isset($recordToDelete['uid'])) {
+                continue;
+            }
 
-            if ($record !== null) {
+            /**
+             * @var Pinecone $record
+             */
+            $record = $this->findByUid((int) $recordToDelete['uid']);
+            if (null !== $record) {
                 $this->remove($record);
             }
         }
         $this->persistenceManager->persistAll();
     }
 
+    /**
+     * @return array<int,string>
+     */
     public function getPineconeRecordsUids(): array
     {
         $uidsPinecone = [];
-        $pineconeIndexRecords = $this->findAll()->toArray();
+        $arrayPineconeIndexRecords = [];
+        $pineconeIndexRecords = $this->findAll();
 
-        foreach ($pineconeIndexRecords as $record) {
+        if ($pineconeIndexRecords instanceof QueryResultInterface) {
+            $arrayPineconeIndexRecords = $pineconeIndexRecords->toArray();
+        }
+
+        /**
+         * @var Pinecone $record
+         */
+        foreach ($arrayPineconeIndexRecords as $record) {
             $uidsPinecone[] = $record->getUidPinecone();
         }
 
         return $uidsPinecone;
     }
 
+    /**
+     * @param array<int,string> $uids
+     */
     public function deleteByUids(array $uids): void
     {
         if (empty($uids)) {
             return;
         }
-        $placeholders = array_map(fn($uid) => $this->pineconeRepositoryQueryBuilder->createNamedParameter($uid, \PDO::PARAM_STR), $uids);
+        $placeholders = array_map(fn ($uid) => $this->pineconeRepositoryQueryBuilder->createNamedParameter($uid, \PDO::PARAM_STR), $uids);
 
         $this->pineconeRepositoryQueryBuilder->delete(self::TABLENAME)
             ->where($this->pineconeRepositoryQueryBuilder->expr()->in('uid_pinecone', $placeholders));
         $this->pineconeRepositoryQueryBuilder->executeStatement();
     }
 
+    /**
+     * @return array<array<string|mixed>>
+     *
+     * @throws \Doctrine\DBAL\Exception
+     */
     public function fetchRecords(string $tableName, int $limit, int $offset): array
     {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable($tableName);
@@ -144,7 +193,7 @@ class PineconeRepository extends Repository
         $secondConditions = [
             $queryBuilder->expr()->eq('t.uid', 'i.record_uid'),
             $queryBuilder->expr()->eq('i.tablename', $queryBuilder->createNamedParameter($tableName, \PDO::PARAM_STR)),
-            $queryBuilder->expr()->eq('i.is_indexed', $queryBuilder->createNamedParameter(1, \PDO::PARAM_INT))
+            $queryBuilder->expr()->eq('i.is_indexed', $queryBuilder->createNamedParameter(1, \PDO::PARAM_INT)),
         ];
 
         if (isset($columns['deleted'])) {
@@ -155,7 +204,7 @@ class PineconeRepository extends Repository
         $compositeExpression = $queryBuilder->expr()->and(
             ...$secondConditions
         );
-        $joinCondition = (string)$compositeExpression;
+        $joinCondition = (string) $compositeExpression;
 
         $query = $queryBuilder
             ->select('t.*')
@@ -176,6 +225,9 @@ class PineconeRepository extends Repository
         return $query->fetchAllAssociative();
     }
 
+    /**
+     * @return array<array<string,int|string>>
+     */
     public function fetchTablesToIndex(): array
     {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable(self::TABLENAME_CONFIG);

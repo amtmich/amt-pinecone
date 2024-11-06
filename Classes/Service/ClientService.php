@@ -6,14 +6,14 @@ namespace Amt\AmtPinecone\Service;
 
 use Amt\AmtPinecone\Domain\Repository\PineconeConfigIndexRepository;
 use Amt\AmtPinecone\Domain\Repository\PineconeRepository;
-use \Amt\AmtPinecone\Http\Client\OpenAiClient;
-use \Amt\AmtPinecone\Http\Client\PineconeClient;
+use Amt\AmtPinecone\Http\Client\OpenAiClient;
+use Amt\AmtPinecone\Http\Client\PineconeClient;
 use Amt\AmtPinecone\Utility\StringUtility;
-use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
 use TYPO3\CMS\Core\Database\ConnectionPool;
-use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
+use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 class ClientService
 {
@@ -33,13 +33,16 @@ class ClientService
         return $this->pineconeClient->queryResult($this->openAiClient->generateEmbedding($text), $count, $table);
     }
 
+    /**
+     * @return array<int,array<string,string|float|int>>
+     */
     public function getIndexingProgress(): array
     {
         $tablesToIndex = $this->getTablesToIndex();
         $indexingProgress = [];
 
         foreach ($tablesToIndex as $record) {
-            $tableName = $record['tablename'];
+            $tableName = (string) $record['tablename'];
             if (!$this->doesTableExist($tableName)) {
                 $this->sendFlashMessage('Please check records configuration and correct table name.');
                 continue;
@@ -84,20 +87,20 @@ class ClientService
     }
 
     /**
-     * @return array<int,string>
+     * @return array<array<string,int|string>>
      */
     public function getNonExistsTables(): array
     {
         $tablesToIndex = $this->getTablesToIndex();
         $nonExistsTables = [];
         foreach ($tablesToIndex as $record) {
-            $tableName = $record['tablename'];
+            $tableName = (string) $record['tablename'];
             if (!$this->doesTableExist($tableName)) {
                 $this->sendFlashMessage('Please check records configuration and correct table name.');
                 $nonExistsTables[] =
                     [
                         'uid' => $record['uid'],
-                        'tablename' => $tableName
+                        'tablename' => $tableName,
                     ];
             }
         }
@@ -105,11 +108,17 @@ class ClientService
         return $nonExistsTables;
     }
 
+    /**
+     * @return array<int,string>
+     */
     public function compareLocalToPinecone(): array
     {
         return array_diff(array_column($this->pineconeClient->getVectorsList(), 'id'), $this->pineconeRepository->getPineconeRecordsUids());
     }
 
+    /**
+     * @return array<int,string>
+     */
     public function findDetachedRecordsInPinecone(): array
     {
         return array_diff($this->pineconeRepository->getPineconeRecordsUids(), array_column($this->pineconeClient->getVectorsList(), 'id'));
@@ -126,7 +135,7 @@ class ClientService
             foreach ($records as $record) {
                 $embedding = $this->getEmbeddingFromRecord($record, $tableName);
                 if ($embedding) {
-                    $uidPinecone = StringUtility::concatString($tableName, (string)$record['uid']);
+                    $uidPinecone = StringUtility::concatString($tableName, (string) $record['uid']);
                     $indexData = [
                         'id' => $uidPinecone,
                         'values' => $embedding,
@@ -137,41 +146,50 @@ class ClientService
                     ];
                     $jsonData = $this->pineconeClient->serializeData(
                         [
-                            'vectors' => $indexData
+                            'vectors' => $indexData,
                         ],
                     );
-                    $result = $this->pineconeClient->validateResponse($this->pineconeClient->sendRequest($this->pineconeClient->getRequestHeader(), "/vectors/upsert", 'POST', $jsonData, $this->pineconeClient->getOptionalHost()));
-                    if ($result) {
+                    $result = $this->pineconeClient->validateResponse($this->pineconeClient->sendRequest($this->pineconeClient->getRequestHeader(), '/vectors/upsert', 'POST', $jsonData, $this->pineconeClient->getOptionalHost()));
+                    if ($result->upsertedCount > 0) {
                         $this->pineconeRepository->saveIndexedRecord($record['uid'], $tableName, $uidPinecone);
                     }
                 }
             }
-
         } while (count($records) > 0);
     }
 
+    /**
+     * @param array<string,string|int> $record
+     *
+     * @return array<int,float|int>|null
+     *
+     * @throws \Exception
+     */
     public function getEmbeddingFromRecord(array $record, string $tableName): ?array
     {
         $indexFieldsDefault = $this->getSearchFields($tableName);
         $concatenatedFields = '';
         $pineconeConfigIndexRepository = GeneralUtility::makeInstance(PineconeConfigIndexRepository::class);
         $indexFieldsConfiguration = $pineconeConfigIndexRepository->getRecordColumnsIndex($tableName)[0]['columns_index'];
-        if ($indexFieldsConfiguration === null) {
+        if (null === $indexFieldsConfiguration) {
             $indexFieldsConfiguration = '';
         }
-        $indexFieldsFromConfiguration = array_filter(explode(',', $indexFieldsConfiguration) ?? []);
-        $indexFieldsFromConfiguration = $indexFieldsFromConfiguration === [] ? $indexFieldsDefault : $indexFieldsFromConfiguration;
+        $indexFieldsFromConfiguration = array_filter(explode(',', $indexFieldsConfiguration));
+        $indexFieldsFromConfiguration = [] === $indexFieldsFromConfiguration ? $indexFieldsDefault : $indexFieldsFromConfiguration;
 
         foreach ($indexFieldsDefault as $field) {
             if (!isset($record[$field]) || !in_array($field, $indexFieldsFromConfiguration)) {
                 continue;
             }
-            $concatenatedFields .= ' ' . strip_tags($record[$field]);
+            $concatenatedFields .= ' '.strip_tags((string) $record[$field]);
         }
 
         return $this->openAiClient->generateEmbedding($concatenatedFields);
     }
 
+    /**
+     * @return array<array<string,int|string>>
+     */
     public function getTablesToIndex(): array
     {
         return $this->pineconeRepository->fetchTablesToIndex();
@@ -198,15 +216,19 @@ class ClientService
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
             ->getQueryBuilderForTable($tableName);
 
-        return (int)$queryBuilder->count('uid')
+        return (int) $queryBuilder->count('uid')
             ->from($tableName)
             ->executeQuery()
             ->fetchOne();
     }
 
+    /**
+     * @return array<int,string>
+     */
     private function getSearchFields(string $tableName): array
     {
         $tca = $GLOBALS['TCA'][$tableName]['ctrl']['searchFields'] ?? '';
+
         return GeneralUtility::trimExplode(',', $tca, true);
     }
 }

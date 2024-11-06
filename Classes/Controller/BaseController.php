@@ -24,4 +24,3 @@ class BaseController extends ActionController
         return $this->moduleTemplateFactory->create($this->request);
     }
 }
-

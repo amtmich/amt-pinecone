@@ -69,7 +69,7 @@ class SettingsController extends BaseController
             [
                 'openAiDTO' => $openAiDTO,
                 'pineconeDTO' => $pineconeDTO,
-                'indexingStatus' => $indexingStatus
+                'indexingStatus' => $indexingStatus,
             ]);
 
         return $moduleTemplate->renderResponse('Settings');
@@ -81,8 +81,10 @@ class SettingsController extends BaseController
             $client->getTestApiCall();
         } catch (\Exception $e) {
             $this->addFlashMessage($e->getMessage(), '', ContextualFeedbackSeverity::ERROR);
+
             return false;
         }
+
         return true;
     }
 

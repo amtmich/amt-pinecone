@@ -17,13 +17,12 @@ class OpenAiDTO
     public function __construct(
         ?string $apiKey,
         ?string $modelForEmbeddings,
-        int     $usedTokens,
-        int     $tokenLimit,
-        int     $availableTokens,
-        bool    $validateApiKey,
-        bool    $validateModel
-    )
-    {
+        int $usedTokens,
+        int $tokenLimit,
+        int $availableTokens,
+        bool $validateApiKey,
+        bool $validateModel,
+    ) {
         $this->apiKey = $apiKey;
         $this->modelForEmbeddings = $modelForEmbeddings;
         $this->usedTokens = $usedTokens;

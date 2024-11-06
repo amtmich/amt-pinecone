@@ -15,7 +15,7 @@
         "enabled": true,
         "actions": [
             {
-                "action": "composer phpstan"
+                "action": "composer phpstan-container"
             }
         ]
     },

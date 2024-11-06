@@ -8,5 +8,8 @@ interface ClientInterface
 {
     public function getTestApiCall(): \stdClass;
 
+    /**
+     * @param string|bool $response
+     */
     public function validateResponse($response): \stdClass;
 }

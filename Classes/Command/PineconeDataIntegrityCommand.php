@@ -7,13 +7,12 @@ namespace Amt\AmtPinecone\Command;
 use Amt\AmtPinecone\Domain\Repository\PineconeRepository;
 use Amt\AmtPinecone\Http\Client\PineconeClient;
 use Amt\AmtPinecone\Service\ClientService;
+use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Command\Command;
 
 class PineconeDataIntegrityCommand extends Command
 {
-
     private ClientService $clientService;
     private PineconeRepository $pineconeRepository;
     private PineconeClient $pineconeClient;

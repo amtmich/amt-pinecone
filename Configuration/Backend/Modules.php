@@ -13,19 +13,19 @@ return [
         'icon' => 'EXT:amt_pinecone/Resources/Public/Icons/Extension.svg',
         'extensionName' => 'AmtPinecone',
         'labels' => [
-            'title' => 'AmtPinecone'
+            'title' => 'AmtPinecone',
         ],
         'controllerActions' => [
             Amt\AmtPinecone\Controller\SettingsController::class => [
-                'settings'
+                'settings',
             ],
             Amt\AmtPinecone\Controller\SearchController::class => [
-                'search', 'index'
+                'search', 'index',
             ],
         ],
         'routes' => [
             '_default' => [
-                'target' => Amt\AmtPinecone\Controller\SettingsController::class . '::settings',
+                'target' => Amt\AmtPinecone\Controller\SettingsController::class.'::settings',
             ],
         ],
     ],

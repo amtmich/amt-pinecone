@@ -9,11 +9,16 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 class PineconeConfigIndexRepository
 {
-    public function getRecordColumnsIndex($tableName): array
+    /**
+     * @return array<int,array<string,string>>
+     *
+     * @throws \Doctrine\DBAL\Exception
+     */
+    public function getRecordColumnsIndex(string $tableName): array
     {
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
             ->getQueryBuilderForTable('tx_amt_pinecone_configindex');
-        return $queryBuilder
+        $a = $queryBuilder
             ->select('columns_index')
             ->from('tx_amt_pinecone_configindex')
             ->where(
@@ -21,5 +26,8 @@ class PineconeConfigIndexRepository
             )
             ->executeQuery()
             ->fetchAllAssociative();
+        $c = 1;
+
+        return [];
     }
 }
