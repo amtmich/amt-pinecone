@@ -18,7 +18,8 @@ class PineconeConfigIndexRepository
     {
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
             ->getQueryBuilderForTable('tx_amt_pinecone_configindex');
-        $a = $queryBuilder
+
+        return $queryBuilder
             ->select('columns_index')
             ->from('tx_amt_pinecone_configindex')
             ->where(
@@ -26,8 +27,5 @@ class PineconeConfigIndexRepository
             )
             ->executeQuery()
             ->fetchAllAssociative();
-        $c = 1;
-
-        return [];
     }
 }
