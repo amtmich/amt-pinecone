@@ -45,6 +45,10 @@
   "scripts": {
     "cs-fix": "php-cs-fixer fix",
     "phpstan": "phpstan analyse",
-    "phpstan-container": "/var/www/html/vendor/bin/phpstan analyse -c phpstan.neon"
+    "phpstan-container": "/var/www/html/vendor/bin/phpstan analyse -c phpstan.neon",
+    "cache-clear": [
+      "ddev exec rm -rf var/cache",
+      "ddev exec vendor/bin/typo3 cache:flush"
+    ]
   }
 }
