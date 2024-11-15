@@ -73,6 +73,17 @@ abstract class BaseClient implements ClientInterface
         }
     }
 
+    public function getMaskedApiKey(?string $apiKey): ?string
+    {
+        $visibleChars = 3;
+
+        $maskedLength = max(0, strlen($apiKey) - 2 * $visibleChars);
+
+        return substr($apiKey, 0, $visibleChars)
+            .str_repeat('*', $maskedLength)
+            .substr($apiKey, -$visibleChars);
+    }
+
     protected function decodeData(string $jsonData, ?bool $associative = null): mixed
     {
         return json_decode($jsonData, $associative);

@@ -1,9 +1,34 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>AMT Pinecone - main page</title>
-</head>
-<body>
-</body>
+<html
+        xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
+        xmlns:core="http://typo3.org/ns/TYPO3/CMS/Core/ViewHelpers"
+        data-namespace-typo3-fluid="true">
+
+<nav class="navbar navbar-expand-lg navbar-light bg-gradient">
+    <div class="container-fluid">
+        <a class="navbar-brand">
+            <div class="custom-icon-container">
+                <core:icon identifier="amt_pinecone"/>
+            </div>
+        </a>
+        <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+            <div class="navbar-nav">
+                <a class="nav-link">
+                    <f:link.action action="index" controller="Search" class="btn btn-secondary">
+                        Semantic search
+                    </f:link.action>
+                </a>
+                <a class="nav-link">
+                    <f:link.action action="indexingStatus" controller="IndexingStatus" class="btn btn-secondary">
+                        Indexing Status
+                    </f:link.action>
+                </a>
+                <a class="nav-link">
+                    <f:link.action action="settings" controller="Settings" class="btn btn-secondary" data-toggle="tooltip" data-placement="right" title='Hint - to change AmtPinecone extension configuration go to "Install tool -> Settings -> Extension Configuration" to change configuration values'>
+                        Settings
+                    </f:link.action>
+                </a>
+            </div>
+        </div>
+    </div>
+</nav>
 </html>

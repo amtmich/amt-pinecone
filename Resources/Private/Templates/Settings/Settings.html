@@ -7,7 +7,7 @@
         <f:flashMessages/>
         <div class="card">
             <div class="card-header bg-secondary text-white">
-                <h3>AmtPinecone Extension Configuration</h3><br>
+                <h3>Configuration</h3><br>
             </div>
             <div class="card-body">
                 <ul class="list-group">
@@ -33,63 +33,21 @@
                         <span class="text-muted">{pineconeDTO.indexName}</span>
                     </li>
                 </ul>
-                <div class="mt-4">
-                    <div class="card-header bg-secondary text-white">
-                        <h3>Auxiliary values from API's</h3><br>
-                    </div>
-                    <ul class="list-group">
-                        <li class="list-group-item">Pinecone API index name: <span
-                                class="text-muted">{pineconeDTO.indexName}</span></li>
-                        <li class="list-group-item">Pinecone API optional host: <span class="text-muted">{pineconeDTO.optionalHost}</span>
-                        </li>
-                        <li class="list-group-item">Used OpenAI tokens by AmtPinecone extension: <span
-                                class="text-muted">{openAiDTO.usedTokens}</span>
-                        </li>
-                        <li class="list-group-item">OpenAI available tokens: <span
-                                class="text-muted">{openAiDTO.availableTokens}</span>
-                        </li>
-                        <li class="list-group-item">OpenAI limit tokens: <span
-                                class="text-muted">{openAiDTO.tokenLimit}</span>
-                        </li>
-                    </ul>
-                </div>
-                <f:if condition="{pineconeDTO.allIndexes}">
-                    <div class="mt-4">
-                        <div class="card-header bg-secondary text-white">
-                            <h3>List of existing indexes</h3><br>
-                        </div>
-                        <ul class="list-group">
-                            <f:for each="{pineconeDTO.allIndexes}" as="index">
-                                <li class="list-group-item">
-                                    <strong>Index Name:</strong> {index.name} <br>
-                                    <strong>Host Name:</strong> {index.host}
-                                </li>
-                            </f:for>
-                        </ul>
-                    </div>
-                </f:if>
-                <div class="mt-4">
-                    <div class="card-header bg-secondary text-white">
-                        <h3>Indexed records from tables - progress</h3><br>
-                    </div>
-                    <ul class="list-group">
-                        <li class="list-group-item">
-                            <f:for each="{pineconeDTO.indexingProgress}" as="progressItem">
-                                <div class="mb-4">
-                                    <strong>{progressItem.tableName}</strong> <span class="text-muted">({progressItem.indexedRecords}/{progressItem.totalRecords} records indexed)</span>
-                                    <div class="progress">
-                                        <div class="progress-bar bg-secondary" role="progressbar"
-                                             style="width: {progressItem.progress}%;"
-                                             aria-valuenow="{progressItem.progress}" aria-valuemin="0"
-                                             aria-valuemax="100">
-                                            {progressItem.progress}%
-                                        </div>
-                                    </div>
+                <ul class="list-group">
+                    <li class="list-group-item">
+                        <div class="mb-4">
+                            <span class="text-muted"><strong>OpenAI tokens used: {openAiDTO.usedTokens}/{openAiDTO.tokenLimit}</strong></span>
+                            <div class="progress">
+                                <div class="progress-bar bg-secondary" role="progressbar"
+                                     style="width: {openAiDTO.percentageTokensUsed}%;"
+                                     aria-valuenow="{openAiDTO.percentageTokensUsed}" aria-valuemin="0"
+                                     aria-valuemax="100">
+                                    {openAiDTO.percentageTokensUsed}%
                                 </div>
-                            </f:for>
-                        </li>
-                    </ul>
-                </div>
+                            </div>
+                        </div>
+                    </li>
+                </ul>
                 <f:if condition="{pineconeDTO.nonExistsTables}">
                     <div class="mt-4">
                         <div class="card-header bg-secondary text-white">
@@ -122,13 +80,6 @@
                         </table>
                     </div>
                 </f:if>
-                <f:render partial="DataIntegrityStatus"
-                          arguments="{typo3IndexedRecords: indexingStatus.typo3IndexedRecords, pineconeIndexedRecords: indexingStatus.pineconeIndexedRecords, dataIntegrityStatus: indexingStatus.dataIntegrityStatus}"/>
-                <div class="mt-4">
-                    <f:link.action action="index" controller="Search" class="btn btn-secondary">
-                        Search with the Pinecone
-                    </f:link.action>
-                </div>
             </div>
         </div>
     </div>

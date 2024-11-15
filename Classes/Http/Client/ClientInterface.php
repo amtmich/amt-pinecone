@@ -12,4 +12,6 @@ interface ClientInterface
      * @param string|bool $response
      */
     public function validateResponse($response): \stdClass;
+
+    public function getMaskedApiKey(?string $apiKey): ?string;
 }

@@ -10,6 +10,7 @@ class OpenAiDTO
     private ?string $modelForEmbeddings;
     private int $usedTokens;
     private int $tokenLimit;
+    private float $percentageTokensUsed;
     private int $availableTokens;
     private bool $validateApiKey;
     private bool $validateModel;
@@ -19,6 +20,7 @@ class OpenAiDTO
         ?string $modelForEmbeddings,
         int $usedTokens,
         int $tokenLimit,
+        float $percentageTokensUsed,
         int $availableTokens,
         bool $validateApiKey,
         bool $validateModel,
@@ -27,6 +29,7 @@ class OpenAiDTO
         $this->modelForEmbeddings = $modelForEmbeddings;
         $this->usedTokens = $usedTokens;
         $this->tokenLimit = $tokenLimit;
+        $this->percentageTokensUsed = $percentageTokensUsed;
         $this->availableTokens = $availableTokens;
         $this->validateApiKey = $validateApiKey;
         $this->validateModel = $validateModel;
@@ -70,6 +73,16 @@ class OpenAiDTO
     public function setTokenLimit(int $tokenLimit): void
     {
         $this->tokenLimit = $tokenLimit;
+    }
+
+    public function getPercentageTokensUsed(): float
+    {
+        return $this->percentageTokensUsed;
+    }
+
+    public function setPercentageTokensUsed(float $percentageTokensUsed): void
+    {
+        $this->percentageTokensUsed = $percentageTokensUsed;
     }
 
     public function getAvailableTokens(): int

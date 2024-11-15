@@ -23,6 +23,8 @@ class SettingsController extends BaseController
 
     public function settingsAction(): ResponseInterface
     {
+        $this->initializeJsAndCssModules();
+
         $moduleTemplate = $this->createRequestModuleTemplate();
 
         $configuration = ClientUtility::createExtensionConfigurationObject()->get('amt_pinecone');
@@ -30,27 +32,20 @@ class SettingsController extends BaseController
         $pineconeClient = ClientUtility::createPineconeClient();
         $pineconeValidateIndexName = $pineconeClient->validateIndexProvidedByUser();
         $openAiValidateModel = $openAiClient->validateEmbeddingModels();
-        $pineconeIndexedRecords = count($pineconeClient->getVectorsList());
-        $dataIntegrityStatus = $this->clientService->checkDataIntegrityStatus($pineconeIndexedRecords);
-
-        $indexingStatus = [
-            'typo3IndexedRecords' => $this->clientService->getIndexedRecordsCount(),
-            'pineconeIndexedRecords' => $pineconeIndexedRecords,
-            'dataIntegrityStatus' => $dataIntegrityStatus,
-        ];
 
         $openAiDTO = new OpenAiDTO(
-            $configuration['openAiApiKey'],
+            $openAiClient->getMaskedApiKey($configuration['openAiApiKey']),
             $configuration['openAiModelForEmbeddings'],
-            $openAiClient->getTotalTokens(),
+            $openAiClient->getUsedTokens(),
             $configuration['openAiTokenLimit'],
+            $this->clientService->getPercentageTokensUsed($openAiClient->getUsedTokens(), $configuration['openAiTokenLimit']),
             $openAiClient->calculateAvailableTokens(),
             $this->validateApiCall($openAiClient),
             $openAiValidateModel
         );
 
         $pineconeDTO = new PineconeDTO(
-            $configuration['pineconeApiKey'],
+            $pineconeClient->getMaskedApiKey($configuration['pineconeApiKey']),
             $pineconeClient->getOptionalHost(),
             $pineconeClient->getIndexName(),
             $pineconeClient->getAllIndexes(),
@@ -60,16 +55,15 @@ class SettingsController extends BaseController
             $this->clientService->getNonExistsTables()
         );
 
+        $this->displayFlashMessage('Hint - to change AmtPinecone extension configuration go to "Install tool -> Settings -> Extension Configuration" to change configuration values', $this->displayHintMessage($this->validateApiCall($openAiClient), $this->validateApiCall($pineconeClient)), -1);
         $this->displayFlashMessage('OpenAI API token limit exceeded.', $openAiClient->hasTokensAvailable(), 2);
         $this->displayFlashMessage('Index name is invalid.', $pineconeValidateIndexName, 2);
         $this->displayFlashMessage('Please provide a valid OpenAI model for embeddings.', $openAiValidateModel, 2);
-        $this->displayFlashMessage('Potential integrity problems - please run scheduler command "amt-pinecone:data-integrity".', $dataIntegrityStatus, 1);
 
         $moduleTemplate->assignMultiple(
             [
                 'openAiDTO' => $openAiDTO,
                 'pineconeDTO' => $pineconeDTO,
-                'indexingStatus' => $indexingStatus,
             ]);
 
         return $moduleTemplate->renderResponse('Settings');
@@ -88,10 +82,8 @@ class SettingsController extends BaseController
         return true;
     }
 
-    public function displayFlashMessage(string $messageBody, bool $boolValue, int $feedbackSeverity): void
+    private function displayHintMessage(bool $validateOpenAiApiKey, bool $validatePineconeApiKey): bool
     {
-        if (!$boolValue) {
-            $this->addFlashMessage($messageBody, '', $feedbackSeverity);
-        }
+        return $validateOpenAiApiKey && $validatePineconeApiKey;
     }
 }

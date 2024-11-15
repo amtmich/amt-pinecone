@@ -8,6 +8,8 @@ class SearchController extends BaseController
 {
     public function indexAction(): ResponseInterface
     {
+        $this->initializeJsAndCssModules();
+
         $moduleTemplate = $this->createRequestModuleTemplate();
 
         return $moduleTemplate->renderResponse();
@@ -15,6 +17,8 @@ class SearchController extends BaseController
 
     public function searchAction(): ResponseInterface
     {
+        $this->initializeJsAndCssModules();
+
         $moduleTemplate = $this->createRequestModuleTemplate();
 
         if (!$this->request->hasArgument('query')) {

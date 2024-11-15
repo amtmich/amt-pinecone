@@ -13,3 +13,6 @@ parameters:
         - %currentWorkingDirectory%/public
         - %currentWorkingDirectory%/Resources
     ignoreErrors:
+        -
+            message: '#Variable \$filters might not be defined.#'
+            path: Classes/Http/Client/PineconeClient.php
