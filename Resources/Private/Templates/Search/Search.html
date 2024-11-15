@@ -4,7 +4,7 @@
 {namespace ext=Amt\AmtPinecone\ViewHelpers}
 <f:layout name="Base"/>
 <f:section name="Content">
-    <f:render partial="SearchBar" arguments="{query: query}"/>
+    <f:render partial="SearchBar" arguments="{query: query, tablesToIndex: tablesToIndex}"/>
     <h1>Semantic search - results</h1>
     <f:if condition="{query}">
         <h2>Results</h2>
@@ -19,7 +19,7 @@
             </tr>
             </thead>
             <tbody>
-            <f:for each="{ext:pineconeSearch(query: '{query}')}" as="result">
+            <f:for each="{ext:pineconeSearch(query: '{query}', table: '{selectedTable}')}" as="result">
                 <tr>
                     <td>{result.id}</td>
                     <td>{result.metadata.uid}</td>

@@ -4,7 +4,17 @@
 <f:form action="search" method="post">
     <div class="form-group">
         <f:form.textfield class="form-control" name="query" value="{query}"/>
-        <br/>
+        <h2>Select a Table to Search:</h2>
+        <label>
+            <f:form.radio name="table" value="" id="searchTable" checked="true"/>
+            All tables
+        </label><br>
+        <f:for each="{tablesToIndex}" as="table">
+            <label>
+                <f:form.radio name="table" id="searchTable" value="{table.tablename}"/>
+                {table.tablename}
+            </label><br>
+        </f:for>
         <f:form.submit class="btn btn-secondary" value="Search"/>
     </div>
 </f:form>
