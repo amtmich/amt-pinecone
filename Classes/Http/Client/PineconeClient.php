@@ -138,8 +138,6 @@ class PineconeClient extends BaseClient
      */
     public function queryResult(?array $embeddings, int $count, string $table): \stdClass
     {
-        $filters = [];
-
         if (empty($embeddings)) {
             return new \stdClass();
         }

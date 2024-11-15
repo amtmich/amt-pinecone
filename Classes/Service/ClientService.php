@@ -20,12 +20,14 @@ class ClientService
     protected OpenAiClient $openAiClient;
     protected PineconeClient $pineconeClient;
     protected PineconeRepository $pineconeRepository;
+    protected PineconeConfigIndexRepository $configIndexRepository;
 
-    public function __construct(OpenAiClient $openAiClient, PineconeClient $pineconeClient, PineconeRepository $pineconeRepository)
+    public function __construct(OpenAiClient $openAiClient, PineconeClient $pineconeClient, PineconeRepository $pineconeRepository, PineconeConfigIndexRepository $configIndexRepository)
     {
         $this->openAiClient = $openAiClient;
         $this->pineconeClient = $pineconeClient;
         $this->pineconeRepository = $pineconeRepository;
+        $this->configIndexRepository = $configIndexRepository;
     }
 
     public function getResultQueryByParams(string $text, int $count, string $table): \stdClass
@@ -52,6 +54,7 @@ class ClientService
             $progress = ($totalRecords > 0) ? ($indexedRecords / $totalRecords) * 100 : 0;
 
             $indexingProgress[] = [
+                'uidTable' => $this->configIndexRepository->getUidByTablename($tableName),
                 'tableName' => $tableName,
                 'totalRecords' => $totalRecords,
                 'indexedRecords' => $indexedRecords,
@@ -169,8 +172,7 @@ class ClientService
     {
         $indexFieldsDefault = $this->getSearchFields($tableName);
         $concatenatedFields = '';
-        $pineconeConfigIndexRepository = GeneralUtility::makeInstance(PineconeConfigIndexRepository::class);
-        $indexFieldsConfiguration = $pineconeConfigIndexRepository->getRecordColumnsIndex($tableName)[0]['columns_index'];
+        $indexFieldsConfiguration = $this->configIndexRepository->getRecordColumnsIndex($tableName)[0]['columns_index'];
         if (null === $indexFieldsConfiguration) {
             $indexFieldsConfiguration = '';
         }
@@ -209,6 +211,11 @@ class ClientService
     public function checkDataIntegrityStatus(int $pineconeIndexedRecords): bool
     {
         return $this->getIndexedRecordsCount() === $pineconeIndexedRecords;
+    }
+
+    public function getPercentageTokensUsed(int $usedTokens, int $openAiTokensLimit): float
+    {
+        return min(100, ($usedTokens / $openAiTokensLimit) * 100);
     }
 
     private function getTotalRecords(string $tableName): int

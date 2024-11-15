@@ -1,0 +1,18 @@
+.custom-icon-container {
+    width: 48px;
+    height: 48px;
+}
+
+.custom-icon-container .icon {
+    font-size: inherit;
+    width: inherit;
+    height: inherit;
+}
+
+.navbar-nav >.btn.btn-secondary {
+    opacity: 1;
+}
+.navbar-nav >.btn.btn-secondary:hover {
+    opacity: 0.75;
+}
+

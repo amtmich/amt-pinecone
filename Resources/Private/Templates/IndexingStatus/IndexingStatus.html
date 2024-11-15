@@ -1,0 +1,50 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
+      xmlns:be="http://typo3.org/ns/TYPO3/CMS/Backend/ViewHelpers"
+      data-namespace-typo3-fluid="true">
+<f:layout name="Base"/>
+<f:section name="Content">
+    <div class="container mt-5">
+        <f:flashMessages/>
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h3>Indexing Status</h3><br>
+            </div>
+            <div class="card-body">
+                <div class="mt-4">
+                    <ul class="list-group">
+                        <li class="list-group-item">
+                            <f:for each="{indexingStatus.indexingProgress}" as="progressItem">
+                                <div class="mb-4">
+                                    <strong>{progressItem.tableName}</strong>
+                                    <span class="text-muted">({progressItem.indexedRecords}/{progressItem.totalRecords} records indexed)</span>
+                                    <be:link.editRecord table="tx_amt_pinecone_configindex"
+                                                        uid="{progressItem.uidTable}">
+                                        <button type="button" class="btn btn-secondary">
+                                            Edit Record
+                                        </button>
+                                    </be:link.editRecord>
+                                    <br><br>
+                                    <div class="progress">
+                                        <div class="progress-bar bg-secondary" role="progressbar"
+                                             style="width: {progressItem.progress}%;"
+                                             aria-valuenow="{progressItem.progress}" aria-valuemin="0"
+                                             aria-valuemax="100">
+                                            {progressItem.progress}%
+                                        </div>
+                                    </div>
+                                </div>
+                            </f:for>
+                        </li>
+                    </ul>
+                </div>
+                <div class="mt-4">
+                    <f:render partial="DataIntegrityStatus"
+                              arguments="{typo3IndexedRecords: indexingStatus.typo3IndexedRecords,
+                              pineconeIndexedRecords: indexingStatus.pineconeIndexedRecords,
+                              dataIntegrityStatus: indexingStatus.dataIntegrityStatus}"/>
+                </div>
+            </div>
+        </div>
+    </div>
+</f:section>
+</html>

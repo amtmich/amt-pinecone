@@ -13,7 +13,7 @@ return [
         'icon' => 'EXT:amt_pinecone/Resources/Public/Icons/Extension.svg',
         'extensionName' => 'AmtPinecone',
         'labels' => [
-            'title' => 'AmtPinecone',
+            'title' => 'Semantic search',
         ],
         'controllerActions' => [
             Amt\AmtPinecone\Controller\SettingsController::class => [
@@ -22,10 +22,13 @@ return [
             Amt\AmtPinecone\Controller\SearchController::class => [
                 'search', 'index',
             ],
+            Amt\AmtPinecone\Controller\IndexingStatusController::class => [
+                'indexingStatus', 'index',
+            ],
         ],
         'routes' => [
             '_default' => [
-                'target' => Amt\AmtPinecone\Controller\SettingsController::class.'::settings',
+                'target' => Amt\AmtPinecone\Controller\IndexingStatusController::class.'::indexingStatus',
             ],
         ],
     ],

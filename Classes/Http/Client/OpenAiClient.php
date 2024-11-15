@@ -112,7 +112,7 @@ class OpenAiClient extends BaseClient
     public function sumUpUsedTokensOpenAi(?int $usedTokens): void
     {
         if ($usedTokens) {
-            $currentTotalTokens = $this->getTotalTokens();
+            $currentTotalTokens = $this->getUsedTokens();
             $updatedTotalTokens = $currentTotalTokens + $usedTokens;
             $this->registry->set('AmtPinecone', 'embeddings_prompt_tokens', $updatedTotalTokens);
         }
@@ -120,7 +120,7 @@ class OpenAiClient extends BaseClient
 
     public function calculateAvailableTokens(): int
     {
-        return (int) max(0, (int) $this->configuration['openAiTokenLimit'] - $this->getTotalTokens());
+        return (int) max(0, (int) $this->configuration['openAiTokenLimit'] - $this->getUsedTokens());
     }
 
     public function hasTokensAvailable(): bool
@@ -128,7 +128,7 @@ class OpenAiClient extends BaseClient
         return $this->calculateAvailableTokens() > 0;
     }
 
-    public function getTotalTokens(): int
+    public function getUsedTokens(): int
     {
         return $this->registry->get('AmtPinecone', 'embeddings_prompt_tokens') ?? 0;
     }

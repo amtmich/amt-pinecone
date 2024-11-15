@@ -4,10 +4,8 @@
 {namespace ext=Amt\AmtPinecone\ViewHelpers}
 <f:layout name="Base"/>
 <f:section name="Content">
-    <h1>Pinecone Search - Results</h1>
-    <f:link.action action="settings" controller="Settings" class="btn btn-secondary mb-3">
-        Settings AmtPinecone
-    </f:link.action>
+    <f:render partial="SearchBar" arguments="{query: query}"/>
+    <h1>Semantic search - results</h1>
     <f:if condition="{query}">
         <h2>Results</h2>
         <table class="table table-striped">
