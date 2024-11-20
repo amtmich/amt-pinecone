@@ -15,11 +15,18 @@ return [
     ],
     'columns' => [
         'tablename' => [
+            'exclude' => true,
             'label' => 'Table Name',
             'config' => [
-                'type' => 'input',
-                'size' => 50,
-                'eval' => 'trim,required',
+                'type' => 'select',
+                'renderType' => 'selectSingle',
+                'items' => [
+                    ['Please choose...', ''],
+                ],
+                'itemsProcFunc' => Amt\AmtPinecone\Service\TableSelectorConfigIndex::class.'->getValidTables',
+                'size' => 1,
+                'maxitems' => 1,
+                'eval' => 'required',
             ],
         ],
         'columns_index' => [
