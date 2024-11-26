@@ -9,7 +9,9 @@ use Amt\AmtPinecone\Domain\Repository\PineconeRepository;
 use Amt\AmtPinecone\Http\Client\OpenAiClient;
 use Amt\AmtPinecone\Http\Client\PineconeClient;
 use Amt\AmtPinecone\Utility\StringUtility;
+use Doctrine\DBAL\ArrayParameterType;
 use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
@@ -20,14 +22,14 @@ class ClientService
     protected OpenAiClient $openAiClient;
     protected PineconeClient $pineconeClient;
     protected PineconeRepository $pineconeRepository;
-    protected PineconeConfigIndexRepository $configIndexRepository;
+    protected PineconeConfigIndexRepository $pineconeConfigIndexRepository;
 
-    public function __construct(OpenAiClient $openAiClient, PineconeClient $pineconeClient, PineconeRepository $pineconeRepository, PineconeConfigIndexRepository $configIndexRepository)
+    public function __construct(OpenAiClient $openAiClient, PineconeClient $pineconeClient, PineconeRepository $pineconeRepository, PineconeConfigIndexRepository $pineconeConfigIndexRepository)
     {
         $this->openAiClient = $openAiClient;
         $this->pineconeClient = $pineconeClient;
         $this->pineconeRepository = $pineconeRepository;
-        $this->configIndexRepository = $configIndexRepository;
+        $this->pineconeConfigIndexRepository = $pineconeConfigIndexRepository;
     }
 
     public function getResultQueryByParams(string $text, int $count, string $table): \stdClass
@@ -54,7 +56,7 @@ class ClientService
             $progress = ($totalRecords > 0) ? ($indexedRecords / $totalRecords) * 100 : 0;
 
             $indexingProgress[] = [
-                'uidTable' => $this->configIndexRepository->getUidByTablename($tableName),
+                'uidTable' => $this->pineconeConfigIndexRepository->findUidByTableName($tableName),
                 'tableName' => $tableName,
                 'totalRecords' => $totalRecords,
                 'indexedRecords' => $indexedRecords,
@@ -137,7 +139,7 @@ class ClientService
 
             foreach ($records as $record) {
                 $embedding = $this->getEmbeddingFromRecord($record, $tableName);
-                if ($embedding) {
+                if ([] !== $embedding) {
                     $uidPinecone = StringUtility::concatString($tableName, (string) $record['uid']);
                     $indexData = [
                         'id' => $uidPinecone,
@@ -164,20 +166,16 @@ class ClientService
     /**
      * @param array<string,string|int> $record
      *
-     * @return array<int,float|int>|null
+     * @return array<int,float|int>
      *
      * @throws \Exception
      */
-    public function getEmbeddingFromRecord(array $record, string $tableName): ?array
+    public function getEmbeddingFromRecord(array $record, string $tableName): array
     {
         $indexFieldsDefault = $this->getSearchFields($tableName);
         $concatenatedFields = '';
-        $indexFieldsConfiguration = $this->configIndexRepository->getRecordColumnsIndex($tableName)[0]['columns_index'];
-        if (null === $indexFieldsConfiguration) {
-            $indexFieldsConfiguration = '';
-        }
-        $indexFieldsFromConfiguration = array_filter(explode(',', $indexFieldsConfiguration));
-        $indexFieldsFromConfiguration = [] === $indexFieldsFromConfiguration ? $indexFieldsDefault : $indexFieldsFromConfiguration;
+        $indexConfigRecord = $this->pineconeConfigIndexRepository->getRecord($tableName, (string) $record['pid']) ?: $this->pineconeConfigIndexRepository->getRecordIfRecordPidIsEmpty($tableName);
+        $indexFieldsFromConfiguration = $this->getFilterFieldsConfig($indexConfigRecord[0]['columns_index'], $indexFieldsDefault);
 
         foreach ($indexFieldsDefault as $field) {
             if (!isset($record[$field]) || !in_array($field, $indexFieldsFromConfiguration)) {
@@ -185,8 +183,9 @@ class ClientService
             }
             $concatenatedFields .= ' '.strip_tags((string) $record[$field]);
         }
+        $indexConfigRecordValues = $this->explodeString($indexConfigRecord['0']['record_pid']);
 
-        return $this->openAiClient->generateEmbedding($concatenatedFields);
+        return $this->generateEmbeddingForRecord($indexConfigRecordValues, $record['pid'], $indexConfigRecord['0']['record_pid'], $concatenatedFields);
     }
 
     /**
@@ -218,10 +217,91 @@ class ClientService
         return min(100, ($usedTokens / $openAiTokensLimit) * 100);
     }
 
+    public function deleteRecordsByMissingConfig(): void
+    {
+        $tableNames = [];
+        $configRecords = $this->pineconeConfigIndexRepository->findAll();
+
+        foreach ($configRecords as $configRecord) {
+            $tableNames[] =
+                $configRecord->getTablename();
+        }
+
+        $recordsToDelete = $this->pineconeRepository->getRecordsWithInvalidConfiguration($tableNames);
+        $this->pineconeRepository->deleteByTableNames($tableNames);
+        $this->pineconeClient->vectorsDelete($recordsToDelete);
+    }
+
+    public function deleteRecordsWithModifiedPid(string $tableName): void
+    {
+        $recordsToDelete = $this->getRecordsWithPidNotInConfigRepository($tableName);
+        $uidsToDelete = [];
+
+        foreach ($recordsToDelete as $record) {
+            $uidsToDelete[] = StringUtility::concatString($tableName, (string) $record['uid']);
+        }
+
+        $this->pineconeRepository->deleteByUids($uidsToDelete);
+        $this->pineconeClient->vectorsDelete($uidsToDelete);
+    }
+
     private function getTotalRecords(string $tableName): int
     {
-        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
-            ->getQueryBuilderForTable($tableName);
+        $configRepository = $this->pineconeConfigIndexRepository->findOneByTableName($tableName);
+        $configRepositoryRecordPid = $configRepository->getRecordPid();
+        if ('empty' === $configRepositoryRecordPid) {
+            return $this->getTotalRecordsIfPidsEmpty($tableName);
+        }
+
+        $queryBuilder = $this->getConnectionForTable($tableName);
+        $configRepositoryPids = $this->explodeString($configRepositoryRecordPid);
+        $count = 0;
+
+        foreach ($configRepositoryPids as $configRepositoryPid) {
+            $count += (int) $queryBuilder->count('uid')
+                ->from($tableName)
+                ->where(
+                    $queryBuilder->expr()->eq('pid', $queryBuilder->createNamedParameter((int) $configRepositoryPid, \PDO::PARAM_INT))
+                )
+                ->executeQuery()
+                ->fetchOne();
+        }
+
+        return $count;
+    }
+
+    /**
+     * @return array<mixed>
+     *
+     * @throws \Doctrine\DBAL\Exception
+     */
+    private function getRecordsWithPidNotInConfigRepository(string $tableName): array
+    {
+        $configRepository = $this->pineconeConfigIndexRepository->findOneByTableName($tableName);
+
+        if ('empty' === $configRepository->getRecordPid()) {
+            return [];
+        }
+
+        $configRepositoryRecordPid = $configRepository->getRecordPid();
+        $queryBuilder = $this->getConnectionForTable($tableName);
+        $configRepositoryPids = array_map('intval', $this->explodeString($configRepositoryRecordPid));
+
+        $notInCondition = $queryBuilder->expr()->notIn(
+            'pid',
+            $queryBuilder->createNamedParameter($configRepositoryPids, ArrayParameterType::INTEGER)
+        );
+
+        return $queryBuilder->select('*')
+            ->from($tableName)
+            ->where($notInCondition)
+            ->executeQuery()
+            ->fetchAllAssociative();
+    }
+
+    private function getTotalRecordsIfPidsEmpty(string $tableName): int
+    {
+        $queryBuilder = $this->getConnectionForTable($tableName);
 
         return (int) $queryBuilder->count('uid')
             ->from($tableName)
@@ -237,5 +317,55 @@ class ClientService
         $tca = $GLOBALS['TCA'][$tableName]['ctrl']['searchFields'] ?? '';
 
         return GeneralUtility::trimExplode(',', $tca, true);
+    }
+
+    /**
+     * @return array<int,string>
+     */
+    private function explodeString(string $text, string $separator = ','): array
+    {
+        return explode($separator, $text);
+    }
+
+    /**
+     * @param array<int,string> $indexConfigRecordValues
+     *
+     * @return array|float[]|int[]|null
+     *
+     * @throws \Exception
+     */
+    private function generateEmbeddingForRecord(array $indexConfigRecordValues, int|string $recordPid, string $configRecordPid, string $concatenatedFields): ?array
+    {
+        foreach ($indexConfigRecordValues as $indexConfigRecordValue) {
+            $indexConfigRecordValue = (int) $indexConfigRecordValue;
+            if ($indexConfigRecordValue === (int) $recordPid || 'empty' === $configRecordPid) {
+                return $this->openAiClient->generateEmbedding($concatenatedFields);
+            }
+        }
+
+        return [];
+    }
+
+    /**
+     * @param array<int,string> $indexFieldsDefault
+     *
+     * @return array|string[]
+     */
+    private function getFilterFieldsConfig(?string $indexFieldsConfiguration, array $indexFieldsDefault): array
+    {
+        if (null === $indexFieldsConfiguration) {
+            $indexFieldsConfiguration = '';
+        }
+        $indexFieldsFromConfiguration = array_filter($this->explodeString($indexFieldsConfiguration));
+
+        return [] === $indexFieldsFromConfiguration ? $indexFieldsDefault : $indexFieldsFromConfiguration;
+    }
+
+    private function getConnectionForTable(string $tableName): QueryBuilder
+    {
+        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
+            ->getQueryBuilderForTable($tableName);
+
+        return $queryBuilder;
     }
 }

@@ -44,6 +44,7 @@ class PineconeDataIntegrityCommand extends Command
         $this->pineconeClient->vectorsDelete($uidsOfRecordsToDelete);
         $pineconeIndexEntriesToDelete = $this->clientService->findDetachedRecordsInPinecone();
         $this->pineconeRepository->deleteByUids($pineconeIndexEntriesToDelete);
+        $this->clientService->deleteRecordsByMissingConfig();
 
         return Command::SUCCESS;
     }

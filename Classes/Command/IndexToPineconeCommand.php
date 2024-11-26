@@ -42,6 +42,7 @@ class IndexToPineconeCommand extends Command
                 continue;
             }
             $this->clientService->indexRecordsToPinecone($tableName, $this->batchSize);
+            $this->clientService->deleteRecordsWithModifiedPid($tableName);
         }
 
         return Command::SUCCESS;

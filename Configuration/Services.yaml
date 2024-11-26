@@ -36,6 +36,18 @@ services:
     arguments:
         - 'tx_amt_pinecone_pineconeindex'
 
+  Amt\AmtPinecone\Domain\Repository\PineconeConfigIndexRepository:
+    arguments:
+      $pineconeConfigIndexRepositoryQueryBuilder: '@queryBuilder.tx_amt_pinecone_configindex'
+
+  queryBuilder.tx_amt_pinecone_configindex:
+    class: 'TYPO3\CMS\Core\Database\Query\QueryBuilder'
+    factory:
+      - '@TYPO3\CMS\Core\Database\ConnectionPool'
+      - 'getQueryBuilderForTable'
+    arguments:
+      - 'tx_amt_pinecone_configindex'
+
   Amt\AmtPinecone\ViewHelpers\PineconeSearchViewHelper:
     calls:
       - method: 'injectPineconeSearchService'
