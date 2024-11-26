@@ -6,7 +6,7 @@ return [
         'label' => 'tablename',
         'tstamp' => 'updated_at',
         'crdate' => 'created_at',
-        'rootLevel' => 1,
+        'rootLevel' => -1,
         'cruser_id' => 'cruser_id',
         'security' => [
             'ignorePageTypeRestriction',
@@ -14,6 +14,12 @@ return [
         'iconfile' => 'EXT:amt_pinecone/Resources/Public/Icons/Extension.svg',
     ],
     'columns' => [
+        'pid' => [
+            'label' => 'pid',
+            'config' => [
+                'type' => 'passthrough',
+            ],
+        ],
         'tablename' => [
             'exclude' => true,
             'label' => 'Table Name',
@@ -37,6 +43,21 @@ return [
                 'eval' => 'trim',
             ],
         ],
+        'record_pid' => [
+            'exclude' => true,
+            'label' => 'Record Storage Page',
+            'config' => [
+                'type' => 'group',
+                'internal_type' => 'db',
+                'allowed' => 'pages',
+                'default' => 'empty',
+            ],
+            'suggestOptions' => [
+                'pages' => [
+                    'pid' => '###CURRENT_PID###',
+                ],
+            ],
+        ],
         'crdate' => [
             'config' => [
                 'type' => 'passthrough',
@@ -44,6 +65,6 @@ return [
         ],
     ],
     'types' => [
-        '0' => ['showitem' => 'tablename, columns_index'],
+        '0' => ['showitem' => 'tablename, columns_index, record_pid'],
     ],
 ];

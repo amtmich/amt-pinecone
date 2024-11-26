@@ -256,6 +256,40 @@ class PineconeRepository extends Repository
         return count($this->findBy(['tablename' => $tableName]));
     }
 
+    /**
+     * @param array<mixed> $tablesNames
+     */
+    public function deleteByTableNames(array $tablesNames): void
+    {
+        if (empty($tablesNames)) {
+            return;
+        }
+
+        $placeholders = array_map(fn ($tableName) => $this->pineconeRepositoryQueryBuilder->createNamedParameter($tableName, \PDO::PARAM_STR), $tablesNames);
+
+        $this->pineconeRepositoryQueryBuilder->delete(self::TABLENAME)
+            ->where($this->pineconeRepositoryQueryBuilder->expr()->notIn('tablename', $placeholders));
+        $this->pineconeRepositoryQueryBuilder->executeStatement();
+    }
+
+    /**
+     * @param array<mixed> $tablesNames
+     *
+     * @return array<mixed>
+     *
+     * @throws \Doctrine\DBAL\Exception
+     */
+    public function getRecordsWithInvalidConfiguration(array $tablesNames): array
+    {
+        $placeholders = array_map(fn ($tableName) => $this->pineconeRepositoryQueryBuilder->createNamedParameter($tableName, \PDO::PARAM_STR), $tablesNames);
+
+        $this->pineconeRepositoryQueryBuilder->select('*')
+            ->from(self::TABLENAME)
+            ->where($this->pineconeRepositoryQueryBuilder->expr()->notIn('tablename', $placeholders));
+
+        return $this->pineconeRepositoryQueryBuilder->executeQuery()->fetchAllAssociative();
+    }
+
     private function prepareQueryBuilder(Connection $connection): QueryBuilder
     {
         $queryBuilder = $connection->createQueryBuilder();

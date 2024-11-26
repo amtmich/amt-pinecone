@@ -14,5 +14,11 @@ parameters:
         - %currentWorkingDirectory%/Resources
     ignoreErrors:
         -
+            message: '#Parameter \#1 \$separator of function explode expects non-empty-string, string given\.#'
+            path: Classes/Service/ClientService.php
+        -
             message: '#Variable \$filters might not be defined.#'
             path: Classes/Http/Client/PineconeClient.php
+        -
+            message: '#Method Amt\\AmtPinecone\\Backend\\Hooks\\CustomDataHandler::processDatamap_preProcessFieldArray\(\) has parameter \$incomingFieldArray with no value type specified in iterable type array\.#'
+            path: Classes/Backend/Hooks/CustomDataHandler.php

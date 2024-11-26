@@ -16,5 +16,6 @@ CREATE TABLE tx_amt_pinecone_configindex
     tablename     varchar(255) NOT NULL,
     columns_index varchar(255) DEFAULT NULL,
     pid           int(11)      NOT NULL DEFAULT 0,
+    record_pid    varchar(50)  DEFAULT NULL,
     PRIMARY KEY (uid)
 );

@@ -11,7 +11,7 @@
   ],
   "require": {
     "typo3/cms-core": "^12.4",
-    "symfony/http-client": "^7.1"
+    "symfony/http-client": "^5.4 || ^6.4"
   },
   "autoload": {
     "psr-4": {
