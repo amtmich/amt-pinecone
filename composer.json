@@ -7,7 +7,27 @@
     "Pinecone",
     "AMT",
     "amt",
-    "pineconeapi"
+    "pineconeapi",
+    "sematnic search",
+    "search",
+    "extension"
+  ],
+  "homepage": "https://www.amtsolution.pl/",
+  "license": "GPL-2.0-or-later",
+  "support": {
+    "email": "kontakt@amtsolution.pl",
+    "source": "https://github.com/amtmich/amt-pinecone",
+    "issues": "https://github.com/amtmich/amt-pinecone/issues"
+  },
+  "authors": [
+    {
+      "name": "Michał Cygankiewicz",
+      "email": "kontakt@amtsolution.pl"
+    },
+    {
+      "name": "Krystian Chanek",
+      "email": "kontakt@amtsolution.pl"
+    }
   ],
   "require": {
     "typo3/cms-core": "^12.4",
