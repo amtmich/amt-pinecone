@@ -6,6 +6,7 @@ use Amt\AmtPinecone\Service\ClientService;
 use Amt\AmtPinecone\Utility\ClientUtility;
 use Psr\Http\Message\ResponseInterface;
 use TYPO3\CMS\Backend\Template\ModuleTemplateFactory;
+use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
 
 class IndexingStatusController extends BaseController
 {
@@ -24,7 +25,7 @@ class IndexingStatusController extends BaseController
         $pineconeClient = ClientUtility::createPineconeClient();
         $pineconeIndexedRecords = count($pineconeClient->getVectorsList());
         $dataIntegrityStatus = $this->clientService->checkDataIntegrityStatus($pineconeIndexedRecords);
-        $this->displayFlashMessage('Potential integrity problems - please run scheduler command "amt-pinecone:data-integrity".', $dataIntegrityStatus, 1);
+        $this->displayFlashMessage('Potential integrity problems - please run scheduler command "amt-pinecone:data-integrity".', $dataIntegrityStatus, ContextualFeedbackSeverity::WARNING);
 
         $indexingStatus = [
             'typo3IndexedRecords' => $this->clientService->getIndexedRecordsCount(),
@@ -37,6 +38,6 @@ class IndexingStatusController extends BaseController
                 'indexingStatus' => $indexingStatus,
             ]);
 
-        return $moduleTemplate->renderResponse('IndexingStatus');
+        return $moduleTemplate->renderResponse('IndexingStatus/IndexingStatus');
     }
 }

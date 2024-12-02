@@ -76,12 +76,12 @@ class PineconeRepository extends Repository
             $conditions[] = $expr->isNull($tableName.'.'.$uidField);
 
             if (null === $deletedField) {
-                $conditions[] = $expr->eq(self::TABLENAME.'.tablename', $queryBuilder->createNamedParameter($tableName, \PDO::PARAM_STR));
+                $conditions[] = $expr->eq(self::TABLENAME.'.tablename', $queryBuilder->createNamedParameter($tableName, Connection::PARAM_STR));
                 $queryBuilder->where($expr->and(...$conditions));
             } else {
-                $conditions[] = $expr->eq($tableName.'.'.$deletedField, $queryBuilder->createNamedParameter(1, \PDO::PARAM_INT));
+                $conditions[] = $expr->eq($tableName.'.'.$deletedField, $queryBuilder->createNamedParameter(1, Connection::PARAM_INT));
                 $queryBuilder->where($expr->or(...$conditions));
-                $queryBuilder->andWhere($expr->eq(self::TABLENAME.'.tablename', $queryBuilder->createNamedParameter($tableName, \PDO::PARAM_STR)));
+                $queryBuilder->andWhere($expr->eq(self::TABLENAME.'.tablename', $queryBuilder->createNamedParameter($tableName, Connection::PARAM_STR)));
             }
 
             $queryBuilder->leftJoin(
@@ -172,7 +172,7 @@ class PineconeRepository extends Repository
         if (empty($uids)) {
             return;
         }
-        $placeholders = array_map(fn ($uid) => $this->pineconeRepositoryQueryBuilder->createNamedParameter($uid, \PDO::PARAM_STR), $uids);
+        $placeholders = array_map(fn ($uid) => $this->pineconeRepositoryQueryBuilder->createNamedParameter($uid, Connection::PARAM_STR), $uids);
 
         $this->pineconeRepositoryQueryBuilder->delete(self::TABLENAME)
             ->where($this->pineconeRepositoryQueryBuilder->expr()->in('uid_pinecone', $placeholders));
@@ -192,12 +192,12 @@ class PineconeRepository extends Repository
         $conditions = [];
         $secondConditions = [
             $queryBuilder->expr()->eq('t.uid', 'i.record_uid'),
-            $queryBuilder->expr()->eq('i.tablename', $queryBuilder->createNamedParameter($tableName, \PDO::PARAM_STR)),
-            $queryBuilder->expr()->eq('i.is_indexed', $queryBuilder->createNamedParameter(1, \PDO::PARAM_INT)),
+            $queryBuilder->expr()->eq('i.tablename', $queryBuilder->createNamedParameter($tableName, Connection::PARAM_STR)),
+            $queryBuilder->expr()->eq('i.is_indexed', $queryBuilder->createNamedParameter(1, Connection::PARAM_INT)),
         ];
 
         if (isset($columns['deleted'])) {
-            $conditions[] = $queryBuilder->expr()->eq('t.deleted', $queryBuilder->createNamedParameter(0, \PDO::PARAM_INT));
+            $conditions[] = $queryBuilder->expr()->eq('t.deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
         }
 
         $conditions[] = $queryBuilder->expr()->isNull('i.record_uid');
@@ -265,7 +265,7 @@ class PineconeRepository extends Repository
             return;
         }
 
-        $placeholders = array_map(fn ($tableName) => $this->pineconeRepositoryQueryBuilder->createNamedParameter($tableName, \PDO::PARAM_STR), $tablesNames);
+        $placeholders = array_map(fn ($tableName) => $this->pineconeRepositoryQueryBuilder->createNamedParameter($tableName, Connection::PARAM_STR), $tablesNames);
 
         $this->pineconeRepositoryQueryBuilder->delete(self::TABLENAME)
             ->where($this->pineconeRepositoryQueryBuilder->expr()->notIn('tablename', $placeholders));
@@ -281,7 +281,7 @@ class PineconeRepository extends Repository
      */
     public function getRecordsWithInvalidConfiguration(array $tablesNames): array
     {
-        $placeholders = array_map(fn ($tableName) => $this->pineconeRepositoryQueryBuilder->createNamedParameter($tableName, \PDO::PARAM_STR), $tablesNames);
+        $placeholders = array_map(fn ($tableName) => $this->pineconeRepositoryQueryBuilder->createNamedParameter($tableName, Connection::PARAM_STR), $tablesNames);
 
         $this->pineconeRepositoryQueryBuilder->select('*')
             ->from(self::TABLENAME)

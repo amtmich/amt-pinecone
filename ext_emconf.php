@@ -9,10 +9,10 @@ $EM_CONF['amt_pinecone'] = [
     'author_email' => 'kontakt@amtsolution.pl',
     'state' => 'stable',
     'clearCacheOnLoad' => true,
-    'version' => '0.1.1',
+    'version' => '0.2.0',
     'constraints' => [
         'depends' => [
-            'typo3' => '12.0.0-12.99.99',
+            'typo3' => '12.0.0-13.99.99',
         ],
     ],
 ];

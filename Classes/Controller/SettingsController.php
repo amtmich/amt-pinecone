@@ -55,10 +55,10 @@ class SettingsController extends BaseController
             $this->clientService->getNonExistsTables()
         );
 
-        $this->displayFlashMessage('Hint - to change AmtPinecone extension configuration go to "Install tool -> Settings -> Extension Configuration" to change configuration values', $this->displayHintMessage($this->validateApiCall($openAiClient), $this->validateApiCall($pineconeClient)), -1);
-        $this->displayFlashMessage('OpenAI API token limit exceeded.', $openAiClient->hasTokensAvailable(), 2);
-        $this->displayFlashMessage('Index name is invalid.', $pineconeValidateIndexName, 2);
-        $this->displayFlashMessage('Please provide a valid OpenAI model for embeddings.', $openAiValidateModel, 2);
+        $this->displayFlashMessage('Hint - to change AmtPinecone extension configuration go to "Install tool -> Settings -> Extension Configuration" to change configuration values', $this->displayHintMessage($this->validateApiCall($openAiClient), $this->validateApiCall($pineconeClient)), ContextualFeedbackSeverity::INFO);
+        $this->displayFlashMessage('OpenAI API token limit exceeded.', $openAiClient->hasTokensAvailable(), ContextualFeedbackSeverity::ERROR);
+        $this->displayFlashMessage('Index name is invalid.', $pineconeValidateIndexName, ContextualFeedbackSeverity::ERROR);
+        $this->displayFlashMessage('Please provide a valid OpenAI model for embeddings.', $openAiValidateModel, ContextualFeedbackSeverity::ERROR);
 
         $moduleTemplate->assignMultiple(
             [
@@ -66,7 +66,7 @@ class SettingsController extends BaseController
                 'pineconeDTO' => $pineconeDTO,
             ]);
 
-        return $moduleTemplate->renderResponse('Settings');
+        return $moduleTemplate->renderResponse('Settings/Settings');
     }
 
     public function validateApiCall(BaseClient $client): bool
