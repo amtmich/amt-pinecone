@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Amt\AmtPinecone\Domain\Repository;
 
 use Amt\AmtPinecone\Domain\Model\PineconeConfigIndex;
+use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Extbase\Persistence\Repository;
@@ -50,7 +51,7 @@ class PineconeConfigIndexRepository extends Repository
             ->where(
                 ...$conditions
             )
-            ->andWhere($expr->eq('tablename', $queryBuilder->createNamedParameter($tableName, \PDO::PARAM_STR)),
+            ->andWhere($expr->eq('tablename', $queryBuilder->createNamedParameter($tableName, Connection::PARAM_STR)),
             );
 
         return $queryBuilder->executeQuery()
@@ -67,7 +68,7 @@ class PineconeConfigIndexRepository extends Repository
         $conditions = [];
         list($queryBuilder, $expr) = $this->prepareQueryBuilder();
 
-        $conditions[] = $expr->eq('tablename', $queryBuilder->createNamedParameter($tableName, \PDO::PARAM_STR));
+        $conditions[] = $expr->eq('tablename', $queryBuilder->createNamedParameter($tableName, Connection::PARAM_STR));
 
         $queryBuilder
             ->select('*')

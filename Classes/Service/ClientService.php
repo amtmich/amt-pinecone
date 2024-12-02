@@ -10,6 +10,7 @@ use Amt\AmtPinecone\Http\Client\OpenAiClient;
 use Amt\AmtPinecone\Http\Client\PineconeClient;
 use Amt\AmtPinecone\Utility\StringUtility;
 use Doctrine\DBAL\ArrayParameterType;
+use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
@@ -261,7 +262,7 @@ class ClientService
             $count += (int) $queryBuilder->count('uid')
                 ->from($tableName)
                 ->where(
-                    $queryBuilder->expr()->eq('pid', $queryBuilder->createNamedParameter((int) $configRepositoryPid, \PDO::PARAM_INT))
+                    $queryBuilder->expr()->eq('pid', $queryBuilder->createNamedParameter((int) $configRepositoryPid, Connection::PARAM_INT))
                 )
                 ->executeQuery()
                 ->fetchOne();

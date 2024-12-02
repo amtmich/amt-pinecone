@@ -28,7 +28,7 @@ class SearchController extends BaseController
             ]
         );
 
-        return $moduleTemplate->renderResponse();
+        return $moduleTemplate->renderResponse('Search/Index');
     }
 
     public function searchAction(): ResponseInterface
@@ -51,6 +51,6 @@ class SearchController extends BaseController
                 'tablesToIndex' => $tablesToIndex,
             ]);
 
-        return $moduleTemplate->renderResponse('Search');
+        return $moduleTemplate->renderResponse('Search/Search');
     }
 }

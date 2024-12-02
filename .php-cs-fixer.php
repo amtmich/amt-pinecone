@@ -2,6 +2,7 @@
 
 $finder = \PhpCsFixer\Finder::create()
     ->exclude('Resources')
+    ->exclude('public')
     ->in(__DIR__);
 
 return (new \PhpCsFixer\Config())

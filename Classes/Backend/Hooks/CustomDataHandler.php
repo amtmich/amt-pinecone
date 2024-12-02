@@ -9,6 +9,7 @@ use Amt\AmtPinecone\Domain\Repository\PineconeRepository;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
+use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 class CustomDataHandler
@@ -29,13 +30,13 @@ class CustomDataHandler
                 $this->addFlashMessage(
                     'A record with the table name "'.htmlspecialchars($newTablename).'" already exists.',
                     'Validation Error',
-                    2
+                    ContextualFeedbackSeverity::ERROR
                 );
             }
         }
     }
 
-    private function addFlashMessage(string $message, string $title, int $severity): void
+    private function addFlashMessage(string $message, string $title, ContextualFeedbackSeverity $severity): void
     {
         $flashMessage = GeneralUtility::makeInstance(FlashMessage::class, $message, $title, $severity, true);
         $flashMessageService = GeneralUtility::makeInstance(FlashMessageService::class);

@@ -30,7 +30,7 @@
     }
   ],
   "require": {
-    "typo3/cms-core": "^12.4",
+    "typo3/cms-core": "^12.4 || ^13.4",
     "symfony/http-client": "^5.4 || ^6.4"
   },
   "autoload": {
@@ -51,7 +51,7 @@
   "config": {
     "allow-plugins": {
       "typo3/cms-composer-installers": true,
-      "typo3/class-alias-loader": true,
+      "typo3/class-alias-loader": false,
       "phpstan/extension-installer": true
     }
   },
