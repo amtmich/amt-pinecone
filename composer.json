@@ -1,6 +1,6 @@
 {
   "name": "amt/amt-pinecone",
-  "description": "AMT_Pinecone Extension",
+  "description": "AMT_Pinecone is a TYPO3 extension that integrates semantic search capabilities into your website using OpenAI embedding models and the Pinecone vector database. Semantic search focuses on understanding the meaning and context of search queries rather than relying on exact keyword matches. It enables more intuitive and relevant search results by analyzing the relationships between words and their meanings. This extension leverages advanced AI models to provide users with highly accurate and context-aware search experiences.",
   "type": "typo3-cms-extension",
   "keywords": [
     "TYPO3 CMS",
@@ -8,7 +8,7 @@
     "AMT",
     "amt",
     "pineconeapi",
-    "sematnic search",
+    "semantic search",
     "search",
     "extension"
   ],
